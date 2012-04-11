@@ -1,0 +1,93 @@
+#!/bin/bash
+
+function PrintUsage() {
+	AppName=`basename $0`
+	
+	echo "ДЕЛАЙ ТАК:"
+	echo "    ${AppName} --add         Добавить запист в днявку. Или завести новый."
+	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
+	echo "    ${AppName} --help        Вывести справку."
+	echo "    ${AppName} --filename    Вывести имя текущего файла"
+}
+
+if [ $# -ne 1 ]; then
+	PrintUsage
+	exit 1
+fi
+
+Action=$1
+ConfFile=~/.avgdiary/avgdiary.conf
+
+if ! [ -f ${ConfFile} ]; then
+cat << _ACEOF
+Нет конфигурационного файла "${ConfFile}".
+_ACEOF
+	exit 1
+fi
+
+. ${ConfFile}
+
+if ! [ -d ${DiaryDir} ]; then
+	echo Не получается найти каталог с дневником \"${DiaryDir}\".
+	exit 1
+fi
+
+# DirName1=`dirname`
+# 
+# if test "${DirName1}" == "."; then
+# 	Path1=`pwd`
+# else
+# 	Path1="${DirName1}"
+# fi
+
+date1=`date +"%Y_%m_%d"`
+
+file_new="${DiaryDir}/day_$date1"
+
+function FileAddEntry() {
+
+	if [ -f "$file_new" ]; then
+
+cat >> $file_new << _ACEOF
+`date +"%H:%M"`    
+
+_ACEOF
+
+	else
+
+cat > $file_new << _ACEOF
+`date +"%d.%m.%Y, %a"`
+
+`date +"%H:%M"`    
+
+_ACEOF
+
+	fi
+	
+	vim $file_new
+}
+
+function FileEditEntry() {
+	if ! [ -f $file_new ]; then
+		echo "Сегодняшний дневник ещё не создан."
+		echo "ДЕЛАЙ ТАК:"
+		echo "    ${AppName} --add         Добавить запист в днявку."
+		exit 1
+	fi
+	
+	vim $file_new
+}
+
+function PrintFilename() {
+	echo "${file_new}"
+}
+
+case $Action in
+--add)         FileAddEntry ;;
+--edit)        FileEditEntry ;;
+--filename)    PrintFilename ;;
+--help)        PrintUsage ;;
+*)
+	echo Неизвестное действие ${Action}
+	exit 1
+esac
