@@ -4,7 +4,7 @@ function PrintUsage() {
 	AppName=`basename $0`
 	
 	echo "ДЕЛАЙ ТАК:"
-	echo "    ${AppName} --add         Добавить запист в днявку. Или завести новый."
+	echo "    ${AppName} --add         Добавить запись в днявку. Или завести новый."
 	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
 	echo "    ${AppName} --help        Вывести справку."
 	echo "    ${AppName} --filename    Вывести имя текущего файла"
