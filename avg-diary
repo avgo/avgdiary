@@ -5,6 +5,7 @@ function PrintUsage() {
 	
 	echo "ДЕЛАЙ ТАК:"
 	echo "    ${AppName} --add         Добавить запись в днявку. Или завести новый."
+	echo "    ${AppName} --addrep      Добавить запись-отчёт в днявку. Или завести новый."
 	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
 	echo "    ${AppName} --help        Вывести справку."
 	echo "    ${AppName} --filename    Вывести имя текущего файла"
@@ -45,11 +46,17 @@ date1=`date +"%Y_%m_%d"`
 file_new="${DiaryDir}/day_$date1"
 
 function FileAddEntry() {
-
+	
+	if [ $# -gt 0 ]; then
+		if [ "$1" == "rep" ]; then
+			RepStr="[ОТЧЁТ]    "
+		fi
+	fi
+	
 	if [ -f "$file_new" ]; then
 
 cat >> $file_new << _ACEOF
-`date +"%H:%M"`    
+`date +"%H:%M"`    ${RepStr}
 
 _ACEOF
 
@@ -58,7 +65,7 @@ _ACEOF
 cat > $file_new << _ACEOF
 `date +"%d.%m.%Y, %a"`
 
-`date +"%H:%M"`    
+`date +"%H:%M"`    ${RepStr}
 
 _ACEOF
 
@@ -84,10 +91,12 @@ function PrintFilename() {
 
 case $Action in
 --add)         FileAddEntry ;;
+--addrep)      FileAddEntry rep;;
 --edit)        FileEditEntry ;;
 --filename)    PrintFilename ;;
 --help)        PrintUsage ;;
 *)
 	echo Неизвестное действие ${Action}
+	PrintUsage
 	exit 1
 esac
