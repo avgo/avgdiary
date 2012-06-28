@@ -1,0 +1,71 @@
+#!/bin/bash
+
+function PrintUsage() {
+	AppName=`basename $0`
+	
+	echo "ДЕЛАЙ ТАК:"
+	echo "    ${AppName} --add         Добавить запись в книгу стихов."
+	echo "    ${AppName} --open        Открыть книгу стихов."
+	echo "    ${AppName} --help        Помощь."
+}
+
+if [ $# -ne 1 ]; then
+	PrintUsage
+	exit 1
+fi
+
+Action=$1
+ConfFile=~/.avgdiary/avgdiary.conf
+
+if ! [ -f ${ConfFile} ]; then
+cat << _ACEOF
+Нет конфигурационного файла "${ConfFile}".
+_ACEOF
+	exit 1
+fi
+
+. ${ConfFile}
+
+if ! [ -d ${DiaryDir} ]; then
+	echo Не получается найти каталог с дневником \"${DiaryDir}\".
+	exit 1
+fi
+
+# DirName1=`dirname`
+# 
+# if test "${DirName1}" == "."; then
+# 	Path1=`pwd`
+# else
+# 	Path1="${DirName1}"
+# fi
+
+lyrics_file="${DiaryDir}/lyrics.txt"
+
+function FileAddEntry() {
+cat >> $lyrics_file << _EOF
+
+
+
+
+                         *  *  *
+
+
+
+                             `date +"%H:%M, %d.%m.%Y, %A"`
+_EOF
+	vim -c "normal Gkk" $lyrics_file
+}
+
+function FileOpen() {
+	vim $lyrics_file
+}
+
+case $Action in
+--add)         FileAddEntry ;;
+--open)        FileOpen ;;
+--help)        PrintUsage ;;
+*)
+	echo Неизвестное действие ${Action}
+	PrintUsage
+	exit 1
+esac
