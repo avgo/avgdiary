@@ -5,7 +5,8 @@ function PrintUsage() {
 	
 	echo "ДЕЛАЙ ТАК:"
 	echo "    ${AppName} --add         Добавить запись в книгу стихов."
-	echo "    ${AppName} --open        Открыть книгу стихов."
+	echo "    ${AppName} --edit        Открыть книгу стихов (или --open)."
+	echo "    ${AppName} --open        Открыть книгу стихов (или --edit)."
 	echo "    ${AppName} --help        Помощь."
 }
 
@@ -62,6 +63,7 @@ function FileOpen() {
 
 case $Action in
 --add)         FileAddEntry ;;
+--edit)        FileOpen ;;
 --open)        FileOpen ;;
 --help)        PrintUsage ;;
 *)
