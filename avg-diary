@@ -8,7 +8,8 @@ function PrintUsage() {
 	echo "    ${AppName} --addrep      Добавить запись-отчёт в днявку. Или завести новый."
 	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
 	echo "    ${AppName} --help        Вывести справку."
-	echo "    ${AppName} --filename    Вывести имя текущего файла"
+	echo "    ${AppName} --filename    Вывести имя текущего файла."
+	echo "    ${AppName} --view-all    Читать весь дневник."
 }
 
 if [ $# -ne 1 ]; then
@@ -89,12 +90,17 @@ function PrintFilename() {
 	echo "${file_new}"
 }
 
+function ViewAll() {
+	cat "${DiaryDir}"/day_* | less
+}
+
 case $Action in
 --add)         FileAddEntry ;;
 --addrep)      FileAddEntry rep;;
 --edit)        FileEditEntry ;;
 --filename)    PrintFilename ;;
 --help)        PrintUsage ;;
+--view-all)    ViewAll ;;
 *)
 	echo Неизвестное действие ${Action}
 	PrintUsage
