@@ -7,6 +7,7 @@ function PrintUsage() {
 	echo "    ${AppName} --add         Добавить запись в днявку. Или завести новый."
 	echo "    ${AppName} --addref      Добавить ссылку в днявку. Или завести новый."
 	echo "    ${AppName} --addrep      Добавить запись-отчёт в днявку. Или завести новый."
+	echo "    ${AppName} --addtask     Добавить задачу в днявку. Или завести новый."
 	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
 	echo "    ${AppName} --help        Вывести справку."
 	echo "    ${AppName} --filename    Вывести имя текущего файла."
@@ -50,8 +51,9 @@ file_new="${DiaryDir}/day_$date1"
 function FileAddEntry()
 {
 	case "${1}" in
-	rep) RepStr="[ОТЧЁТ]    " ;;
-	ref) RepStr="ПОСМОТРЕТЬ:    " ;;
+	rep)            RepStr="[ОТЧЁТ]    " ;;
+	ref)            RepStr="ПОСМОТРЕТЬ:    " ;;
+	task)           RepStr="ЗАДАЧА:    " ;;
 	esac
 	
 	if [ -f "$file_new" ]; then
@@ -98,6 +100,7 @@ case $Action in
 --add)         FileAddEntry ;;
 --addref)      FileAddEntry ref;;
 --addrep)      FileAddEntry rep;;
+--addtask)     FileAddEntry task;;
 --edit)        FileEditEntry ;;
 --filename)    PrintFilename ;;
 --help)        PrintUsage ;;
