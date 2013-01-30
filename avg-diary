@@ -4,10 +4,10 @@ function PrintUsage() {
 	AppName=`basename $0`
 	
 	echo "ДЕЛАЙ ТАК:"
-	echo "    ${AppName} --add         Добавить запись в днявку. Или завести новый."
-	echo "    ${AppName} --addref      Добавить ссылку в днявку. Или завести новый."
-	echo "    ${AppName} --addrep      Добавить запись-отчёт в днявку. Или завести новый."
-	echo "    ${AppName} --addtask     Добавить задачу в днявку. Или завести новый."
+	echo "    ${AppName} --add         Добавить запись в дневник. Или завести новый."
+	echo "    ${AppName} --addref      Добавить ссылку в дневник. Или завести новый."
+	echo "    ${AppName} --addrep      Добавить запись-отчёт в дневник. Или завести новый."
+	echo "    ${AppName} --addtask     Добавить задачу в дневник. Или завести новый."
 	echo "    ${AppName} --edit        Редактировать сегодняшнюю запись."
 	echo "    ${AppName} --help        Вывести справку."
 	echo "    ${AppName} --filename    Вывести имя текущего файла."
@@ -82,7 +82,7 @@ function FileEditEntry() {
 	if ! [ -f $file_new ]; then
 		echo "Сегодняшний дневник ещё не создан."
 		echo "ДЕЛАЙ ТАК:"
-		echo "    ${AppName} --add         Добавить запист в днявку."
+		echo "    ${AppName} --add         Добавить запись в дневник."
 		exit 1
 	fi
 	
