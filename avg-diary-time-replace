@@ -53,4 +53,4 @@ sub convert {
 	close TIME_LOG_OUT or die $!;
 }
 
-convert();
+printf "avg_diary_dir = '%s'.\n", $ENV{avg_diary_dir};
