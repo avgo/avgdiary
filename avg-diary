@@ -5,6 +5,7 @@ function PrintUsage() {
 	
 	echo "ДЕЛАЙ ТАК:"
 	echo "    ${AppName} --add         Добавить запись в дневник. Или завести новый."
+	echo "    ${AppName} --addbook     Добавить запись в дневник (приобрести книгу). Или завести новый."
 	echo "    ${AppName} --addref      Добавить ссылку в дневник. Или завести новый."
 	echo "    ${AppName} --addrep      Добавить запись-отчёт в дневник. Или завести новый."
 	echo "    ${AppName} --addtask     Добавить задачу в дневник. Или завести новый."
@@ -52,6 +53,7 @@ file_new="${avg_diary_dir}/day_$date1"
 function FileAddEntry()
 {
 	case "${1}" in
+	book)           RepStr="КНИГА:    " ;;
 	rep)            RepStr="[ОТЧЁТ]    " ;;
 	ref)            RepStr="ПОСМОТРЕТЬ:    " ;;
 	task)           RepStr="ЗАДАЧА:    " ;;
@@ -101,6 +103,7 @@ vim_options="-c 'set expandtab'"
 
 case $Action in
 --add)         FileAddEntry ;;
+--addbook)     FileAddEntry book;;
 --addref)      FileAddEntry ref;;
 --addrep)      FileAddEntry rep;;
 --addtask)     FileAddEntry task;;
