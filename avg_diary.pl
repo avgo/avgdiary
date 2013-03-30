@@ -75,7 +75,7 @@ sub FileEditEntry {
 			"ошибка: сегодняшний дневник ещё не создан.\n".
 			"можно создать дневник командой:\n".
 			"\n".
-			"    avg-diary --add\n".
+			"    avg-diary add\n".
 			"\n";
 		exit(1);
 	}
@@ -87,12 +87,12 @@ sub PrintUsage {
 	my $AppName = $0;
 	printf 
 		"ДЕЛАЙ ТАК:\n".
-		"    $AppName --add         Добавить запись в дневник. Или завести новый.\n".
-		"    $AppName --addrep      Добавить запись-отчёт в дневник. Или завести новый.\n".
-		"    $AppName --edit        Редактировать сегодняшнюю запись.\n".
-		"    $AppName --help        Вывести справку.\n".
-		"    $AppName --filename    Вывести имя текущего файла.\n".
-		"    $AppName --view-all    Читать весь дневник.\n";
+		"    $AppName add         Добавить запись в дневник. Или завести новый.\n".
+		"    $AppName addrep      Добавить запись-отчёт в дневник. Или завести новый.\n".
+		"    $AppName edit        Редактировать сегодняшнюю запись.\n".
+		"    $AppName help        Вывести справку.\n".
+		"    $AppName filename    Вывести имя текущего файла.\n".
+		"    $AppName view-all    Читать весь дневник.\n";
 }
 
 
@@ -110,9 +110,9 @@ my $action;
 my $command = $ARGV[0];
 
 given ($command) {
-	when (/^--add$/)    { $action = $action_add; }
-	when (/^--addrep$/) { $action = $action_addrep; }
-	when (/^--edit$/)   { $action = $action_edit; }
+	when (/^add$/)    { $action = $action_add; }
+	when (/^addrep$/) { $action = $action_addrep; }
+	when (/^edit$/)   { $action = $action_edit; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
