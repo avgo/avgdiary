@@ -17,6 +17,7 @@ my $avg_diary_dir;
 my $action_add = 1;
 my $action_addrep = 2;
 my $action_edit = 3;
+my $action_tags = 4;
 
 
 
@@ -98,6 +99,14 @@ sub PrintUsage {
 		"    $AppName view-all    Читать весь дневник.\n";
 }
 
+sub TagsAdd {
+	my $command;
+	
+	while ($command = shift @ARGV) {
+		printf "tag: $command\n";
+	}
+}
+
 
 
 
@@ -134,6 +143,7 @@ given ($command) {
 	when (/^add$/)    { $action = $action_add; }
 	when (/^addrep$/) { $action = $action_addrep; }
 	when (/^edit$/)   { $action = $action_edit; }
+	when (/^tags$/)   { $action = $action_tags; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
@@ -147,10 +157,28 @@ AvgDiaryDirCheck;
 $date1 = strftime("%Y_%m_%d", localtime);
 $file_new = abs_path($avg_diary_dir."/day_".$date1);
 
+my $action_tags_action;
+
 given ($action) {
 	when ([	$action_add,
 		$action_addrep ])  { FileAddEntry $action; }
 	when ($action_edit)        { FileEditEntry; }
+	when ($action_tags) {
+		$action_tags_action = shift @ARGV;
+		given ($action_tags_action) {
+		when (/^add$/) {
+			TagsAdd;
+		}
+		when (/^$/) {
+			printf STDERR "ошибка: не указан параметр для действия 'tags'.\n";
+			PrintUsage;
+		}
+		default {
+			printf STDERR	"ошибка: указан плохой параметр ('$action_tags_action')\n".
+					"        для действия 'tags'\n";
+			PrintUsage;
+		}}
+	}
 	default {
 		printf STDERR "ошибка: неизвестный action: '$action'.\n";
 		PrintUsage;
