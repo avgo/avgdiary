@@ -60,13 +60,19 @@ sub FileAddEntry {
 	my $prefix = shift;
 	my $prefix2 = "";
 	
+	if (! -f $file_new) {
+		my $date_hdr = strftime("%d.%m.%Y, %a", localtime);
+		printf "$date_hdr\n\n";
+	}
+	
 	given ($prefix) {
 		when (/rep/) {
 			$prefix2 = "[ОТЧЁТ]    ";
 		}
 	}
 	
-	printf "$prefix2\n";
+	my $hour_min = strftime("%H:%M", localtime);
+	printf "$hour_min    $prefix2\n\n";
 }
 
 sub FileEditEntry {
