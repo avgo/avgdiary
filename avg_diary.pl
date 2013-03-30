@@ -116,7 +116,6 @@ while (($command = shift @ARGV) && $command =~ /^--/) {
 	given ($command) {
 		when (/^--avg-diary-dir=(.*)/) {
 			$avg_diary_dir = $1;
-			printf "avg_diary_dir: $avg_diary_dir\n";
 		}
 		default {
 			printf STDERR "ошибка: неизвестный параметр '$command'.\n";
@@ -126,13 +125,12 @@ while (($command = shift @ARGV) && $command =~ /^--/) {
 	}
 }
 
-if ($command eq "") {
-	printf STDERR "ошибка: не указано действие.\n";
-	PrintUsage;
-	exit(1);
-}
-
 given ($command) {
+	when (/^$/) {
+		printf STDERR "ошибка: не указано действие.\n";
+		PrintUsage;
+		exit(1);
+	}
 	when (/^add$/)    { $action = $action_add; }
 	when (/^addrep$/) { $action = $action_addrep; }
 	when (/^edit$/)   { $action = $action_edit; }
