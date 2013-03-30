@@ -126,8 +126,8 @@ $date1 = strftime("%Y_%m_%d", localtime);
 $file_new = abs_path($avg_diary_dir."/day_".$date1);
 
 given ($action) {
-	when (	$action_add or
-		$action_addrep)  { FileAddEntry $action; }
+	when ([	$action_add,
+		$action_addrep ])  { FileAddEntry $action; }
 	when ($action_edit)      { FileEditEntry; }
 	default {
 		printf STDERR "ошибка: неизвестный action: '$action'.\n";
