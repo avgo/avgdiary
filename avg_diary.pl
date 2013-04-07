@@ -73,6 +73,8 @@ sub FileAddEntry {
 	close DIARY;
 	
 	system("vim -c 'set expandtab' -c 'normal GkA' $file_new");
+	
+	FileCheck;
 }
 
 sub FileEditEntry {
