@@ -19,10 +19,12 @@ my $action_addrep = 2;
 my $action_edit = 3;
 my $action_filename = 4;
 my $action_tags = 5;
+my $action_update = 6;
 my $tags_dir;
 
 sub FileCheck;
 sub FileNewLoadTags;
+sub Update;
 
 
 
@@ -46,6 +48,13 @@ sub AvgDiaryDirCheck {
 sub AvgDiaryDirEnv {
 	return if $avg_diary_dir ne "";
 	$avg_diary_dir = $ENV{avg_diary_dir};
+}
+
+sub CheckCreateTagsPath {
+	$tags_dir = abs_path($avg_diary_dir."/tags");
+	if (! -d $tags_dir) {
+		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
+	}
 }
 
 sub FileAddEntry {
@@ -101,10 +110,7 @@ sub FileCheck {
 	my @tags;
 	my @tags_in_file;
 
-	$tags_dir = abs_path($avg_diary_dir."/tags");
-	if (! -d $tags_dir) {
-		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
-	}
+	CheckCreateTagsPath;
 	FileNewLoadTags \@tags, $tags_dir;
 	open DAY1, "<", $file_new or die "$!";
 	while (my $line = <DAY1>) {
@@ -186,14 +192,58 @@ sub TagsList {
 	my @tags;
 	my @tags_in_file;
 
-	$tags_dir = abs_path($avg_diary_dir."/tags");
-	if (! -d $tags_dir) {
-		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
-	}
+	CheckCreateTagsPath;
 	FileNewLoadTags \@tags, $tags_dir;
 	@tags = sort @tags;
 	for my $ct (@tags) {
 		printf "$ct\n";
+	}
+}
+
+sub Update {
+	my @tags;
+	my $diary_dir_h;
+	my $cur_file;
+	my @files;
+
+	CheckCreateTagsPath;
+	FileNewLoadTags \@tags, $tags_dir;
+	opendir $diary_dir_h, $avg_diary_dir or die "Не получается открыть каталог '$avg_diary_dir'. $!.\n";
+	while ($cur_file = readdir $diary_dir_h) {
+		if ($cur_file =~ /^day_/) {
+			push @files, $cur_file;
+		}
+	}
+	closedir $diary_dir_h;
+	
+	@files = sort @files;
+	for my $file1 (@files) {
+		my $file2 = abs_path(${avg_diary_dir}."/".${file1});
+		my $cur_date;
+		my $cur_record;
+
+		open DAY1, "<", $file2 or die "Не получается открыть файл '$file2'. $!.\n";
+		while (my $line = <DAY1>) {
+			given ($line) {
+			when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
+				$cur_date = $line;
+				printf "date    : %s", $line;
+			}
+			when (/^[0-9]{2}:[0-9]{2}/) {
+				printf "time    : %s", $line;
+			}
+			when (/^ +tags:/) {
+				printf "tags    : %s", $line;
+			}
+			when (/^ /) {
+				printf "mess    : %s", $line;
+			}
+			default {
+				printf "unknown : %s", $line;
+			}
+			}
+		}
+		close DAY1;
 	}
 }
 
@@ -239,6 +289,7 @@ given ($command) {
 	when (/^edit$/)		{ $action = $action_edit; }
 	when (/^filename$/)	{ $action = $action_filename; }
 	when (/^tags$/)		{ $action = $action_tags; }
+	when (/^update$/)	{ $action = $action_update; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
@@ -284,6 +335,9 @@ given ($action) {
 					"        для действия 'tags'\n";
 			PrintUsage;
 		}}
+	}
+	when ($action_update) {
+		Update;
 	}
 	default {
 		printf STDERR "ошибка: неизвестный action: '$action'.\n";
