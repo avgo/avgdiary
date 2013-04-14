@@ -77,7 +77,7 @@ _ACEOF
 
 	fi
 	
-	vim -c "normal GkA" $file_new
+	eval "vim ${vim_options} -c 'normal GkA' '${file_new}'"
 }
 
 function FileEditEntry() {
@@ -88,7 +88,7 @@ function FileEditEntry() {
 		exit 1
 	fi
 	
-	vim $file_new
+	eval "vim ${vim_options} $file_new"
 }
 
 function PrintFilename() {
@@ -98,6 +98,8 @@ function PrintFilename() {
 function ViewAll() {
 	cat "${avg_diary_dir}"/day_* | less
 }
+
+vim_options="-c 'set expandtab'"
 
 case $Action in
 --add)         FileAddEntry ;;
