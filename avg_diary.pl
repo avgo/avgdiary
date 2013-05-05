@@ -7,6 +7,7 @@ use strict;
 use Cwd qw(abs_path);
 use File::Spec;
 use POSIX qw(strftime);
+use List::MoreUtils qw(uniq);
 
 
 
@@ -24,7 +25,10 @@ my $tags_dir;
 
 sub FileCheck;
 sub FileNewLoadTags;
+sub ParseLineWithTags;
+sub TagsCheck;
 sub Update;
+sub UpdateSaveToFiles;
 
 
 
@@ -117,33 +121,10 @@ sub FileCheck {
 		chomp $line;
 		given ($line) {
 		when (/^ *tags:/) {
-			$line =~ s/^ *tags: *//g;
-			while ($line) {
-				if ( ! ($line =~ s/^\[([^\]]*)\][, ]*//)) {
-					printf "некорректное определение тега: $line\n";
-					$line = "";
-				}
-				elsif ($1 eq "") {
-					printf "пустой тег\n";
-				}
-				else {
-					push @tags_in_file, $1
-				}
-			}
-		}
-		}
+			ParseLineWithTags \@tags_in_file, $line, "";
+		}}
 	}
-	for my $ct1 (@tags_in_file) {
-		my $finded = 0;
-		for my $ct2 (@tags) {
-			if ($ct1 eq $ct2) {
-				$finded = 1
-			}
-		}
-		if ($finded == 0) {
-			printf "предупреждение: тег '$ct1' не определён в множестве тегов.\n";
-		}
-	}
+	TagsCheck \@tags, \@tags_in_file;
 }
 
 sub FileNewLoadTags {
@@ -167,6 +148,25 @@ sub FileNewLoadTags {
 	closedir $tags_dir_h;
 }
 
+sub ParseLineWithTags {
+	(my $tags_h, my $line, my $comment) = @_;
+
+	chomp $line;
+	$line =~ s/^ *tags: *//g;
+	while ($line) {
+		if ( ! ($line =~ s/^\[([^\]]*)\][, ]*//)) {
+			printf "%s:некорректное определение тега: |%s|%s|\n", $comment, $1, $line;
+			$line = "";
+		}
+		elsif ($1 eq "") {
+			printf "пустой тег\n";
+		}
+		else {
+			push @{$tags_h}, $1;
+		}
+	}
+}
+
 sub PrintUsage {
 	my $AppName = $0;
 	printf 
@@ -186,6 +186,25 @@ sub TagsAdd {
 	while ($command = shift @ARGV) {
 		printf "tag: $command\n";
 	}
+}
+
+sub TagsCheck {
+	(my $tags, my $tags_in_file) = @_;
+	my $result = 1;
+
+	for my $ct1 (@{$tags_in_file}) {
+		my $finded = 0;
+		for my $ct2 (@{$tags}) {
+			if ($ct1 eq $ct2) {
+				$finded = 1
+			}
+		}
+		if ($finded == 0) {
+			$result = 0;
+			printf "предупреждение: тег '$ct1' не определён в множестве тегов.\n";
+		}
+	}
+	return $result;
 }
 
 sub TagsList {
@@ -221,29 +240,46 @@ sub Update {
 		my $file2 = abs_path(${avg_diary_dir}."/".${file1});
 		my $cur_date;
 		my $cur_record;
+		my @tags_in_record;
 
 		open DAY1, "<", $file2 or die "Не получается открыть файл '$file2'. $!.\n";
+		my $line_num = 1;
 		while (my $line = <DAY1>) {
 			given ($line) {
 			when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
+				UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
 				$cur_date = $line;
-				printf "date    : %s", $line;
+				$cur_record = "";
 			}
 			when (/^[0-9]{2}:[0-9]{2}/) {
-				printf "time    : %s", $line;
+				UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+				$cur_record = $line;
 			}
 			when (/^ +tags:/) {
-				printf "tags    : %s", $line;
-			}
-			when (/^ /) {
-				printf "mess    : %s", $line;
+				ParseLineWithTags \@tags_in_record, $line, "$file2:$line_num";
+				$cur_record .= $line;
 			}
 			default {
-				printf "unknown : %s", $line;
-			}
-			}
+				$cur_record .= $line;
+			}}
+			++$line_num;
 		}
 		close DAY1;
+		printf "%s: ", $file2 if $#tags_in_record >= 0;
+		for my $ct (@tags_in_record) {
+			printf "%s ", $ct;
+		}
+		printf "\n" if $#tags_in_record > -1;
+	}
+}
+
+sub UpdateSaveToFiles {
+	(my $tags, my $tags_in_file, my $cur_date, my $cur_record) = @_;
+
+	if (!TagsCheck $tags, $tags_in_file) {
+		chomp $cur_date;
+		printf "date: %s\n", $cur_date;
+		exit(1);
 	}
 }
 
