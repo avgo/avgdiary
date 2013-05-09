@@ -20,13 +20,16 @@ my $action_addrep = 2;
 my $action_edit = 3;
 my $action_filename = 4;
 my $action_tags = 5;
-my $action_update = 6;
+my $action_test = 6;
+my $action_update = 7;
 my $tags_dir;
 
 sub FileCheck;
 sub FileNewLoadTags;
 sub ParseLineWithTags;
 sub TagsCheck;
+sub TagsExpand;
+sub Test;
 sub Update;
 sub UpdateSaveToFiles;
 
@@ -207,6 +210,27 @@ sub TagsCheck {
 	return $result;
 }
 
+sub TagsExpand {
+	my $tags = shift;
+
+	for (my $i = 0; $i <= $#{$tags}; ++$i) {
+		my @new_tags = split /\//, ${$tags}[$i];
+		next if $#new_tags < 1;
+		delete $new_tags[$#new_tags];
+		my $sep = "";
+		my $cur_tag = "";
+	L1:	for (my $j = 0; $j <= $#new_tags; ++$j) {
+			$cur_tag = $cur_tag.$sep.$new_tags[$j];
+			$sep = "/";
+			for my $k (@{$tags}) {
+				next L1 if $cur_tag eq $k;
+			}
+			${$tags}[$#{$tags}+1] = $cur_tag;
+		}
+	}
+	@{$tags} = sort @{$tags};
+}
+
 sub TagsList {
 	my @tags;
 	my @tags_in_file;
@@ -216,6 +240,19 @@ sub TagsList {
 	@tags = sort @tags;
 	for my $ct (@tags) {
 		printf "$ct\n";
+	}
+}
+
+sub Test {
+	my @tags = (
+		"tag1/tag11",
+		"tag1/tag11/tag111",
+		"tag1/tag11/tag111/tag1111/tag11111/tag111111/tag1111111/tag11111111"
+	);
+	TagsExpand \@tags;
+
+	for my $tag (@tags) {
+		printf "%s\n", $tag;
 	}
 }
 
@@ -274,13 +311,19 @@ sub Update {
 }
 
 sub UpdateSaveToFiles {
-	(my $tags, my $tags_in_file, my $cur_date, my $cur_record) = @_;
+	(my $tags, my $tags_in_record, my $cur_date, my $cur_record) = @_;
 
-	if (!TagsCheck $tags, $tags_in_file) {
+	if (scalar @{$tags_in_record} == 0) {
+		return ;
+	}
+
+	if (!TagsCheck $tags, $tags_in_record) {
 		chomp $cur_date;
 		printf "date: %s\n", $cur_date;
 		exit(1);
 	}
+
+	TagsExpand $tags_in_record;
 }
 
 
@@ -325,6 +368,7 @@ given ($command) {
 	when (/^edit$/)		{ $action = $action_edit; }
 	when (/^filename$/)	{ $action = $action_filename; }
 	when (/^tags$/)		{ $action = $action_tags; }
+	when (/^test$/)         { $action = $action_test; }
 	when (/^update$/)	{ $action = $action_update; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
@@ -371,6 +415,9 @@ given ($action) {
 					"        для действия 'tags'\n";
 			PrintUsage;
 		}}
+	}
+	when ($action_test) {
+		Test;
 	}
 	when ($action_update) {
 		Update;
