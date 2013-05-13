@@ -271,7 +271,13 @@ sub Update {
 		}
 	}
 	closedir $diary_dir_h;
-	
+
+	my $state_init = 1;
+	my $state_date = 2;
+	my $state_rec = 3;
+
+	my $state = $state_init;
+
 	@files = sort @files;
 	for my $file1 (@files) {
 		my $file2 = abs_path(${avg_diary_dir}."/".${file1});
@@ -282,48 +288,102 @@ sub Update {
 		open DAY1, "<", $file2 or die "Не получается открыть файл '$file2'. $!.\n";
 		my $line_num = 1;
 		while (my $line = <DAY1>) {
-			given ($line) {
-			when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
-				UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
-				$cur_date = $line;
-				$cur_record = "";
+			given ($state) {
+			when ($state_init) {
+				given ($line) {
+				when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
+					chomp $line;
+					$cur_date = $line;
+					$state = $state_date;
+				}
+				when (/^$/) {
+				}
+				default {
+					printf "%s:%u: нарушение синтаксиса.\n", $file2, $line_num;
+					exit 1;
+				}
+				}
 			}
-			when (/^[0-9]{2}:[0-9]{2}/) {
-				UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
-				$cur_record = $line;
+			when ($state_date) {
+				given ($line) {
+				when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
+					chomp $line;
+					$cur_date = $line;
+				}
+				when (/^[0-9]{2}:[0-9]{2}/) {
+					$cur_record = $line;
+					$state = $state_rec;
+				}
+				when (/^$/) {
+				}
+				default {
+					printf "%s:%u: нарушение синтаксиса.\n", $file2, $line_num;
+					exit 1;
+				}
+				}
 			}
-			when (/^ +tags:/) {
-				ParseLineWithTags \@tags_in_record, $line, "$file2:$line_num";
-				$cur_record .= $line;
+			when ($state_rec) {
+				given ($line) {
+				when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
+					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+					@tags_in_record = ();
+					chomp $line;
+					$cur_date = $line;
+					$state = $state_date;
+				}
+				when (/^[0-9]{2}:[0-9]{2}/) {
+					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+					@tags_in_record = ();
+					$cur_record = $line;
+				}
+				when (/^ +tags:/) {
+					ParseLineWithTags \@tags_in_record, $line, "$file2:$line_num";
+					$cur_record = $cur_record.$line;
+				}
+				default {
+					$cur_record = $cur_record.$line;
+				}
+				}
 			}
-			default {
-				$cur_record .= $line;
-			}}
+			}
 			++$line_num;
 		}
 		close DAY1;
-		printf "%s: ", $file2 if $#tags_in_record >= 0;
-		for my $ct (@tags_in_record) {
-			printf "%s ", $ct;
+		if ($state == $state_rec) {
+			UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+			$state = $state_init;
 		}
-		printf "\n" if $#tags_in_record > -1;
 	}
 }
 
 sub UpdateSaveToFiles {
 	(my $tags, my $tags_in_record, my $cur_date, my $cur_record) = @_;
 
-	if (scalar @{$tags_in_record} == 0) {
-		return ;
-	}
+	printf "file %s .. ", $cur_date;
+#	if (scalar @{$tags_in_record} == 0) {
+#		printf "ignoring\n\n";
+#		return ;
+#	}
+	printf "process\n\n";
 
 	if (!TagsCheck $tags, $tags_in_record) {
 		chomp $cur_date;
-		printf "date: %s\n", $cur_date;
+		printf "exit. date: %s\n", $cur_date;
 		exit(1);
 	}
 
 	TagsExpand $tags_in_record;
+
+	my $mark1_b = "\033[31m";
+	my $mark2_b = "\033[32m";
+	my $mark_e = "\033[0m";
+
+	printf "%sdate: %s%s\nrecord:\n%s", $mark1_b, $cur_date, $mark_e, $cur_record;
+	for my $cur_tag (@{$tags_in_record}) {
+		my $cur_path = abs_path($avg_diary_dir."/tags/".$cur_tag);
+		printf "  %ssave to: '%s'%s\n", $mark2_b, $cur_path, $mark_e;
+	}
+	printf "\n" if $#{$tags_in_record} >= 0;
 }
 
 
