@@ -22,11 +22,19 @@ my $action_filename = 4;
 my $action_tags = 5;
 my $action_test = 6;
 my $action_update = 7;
+
+my $mark_red = "\033[31m";
+my $mark_green = "\033[32m";
+my $mark_e = "\033[0m";
+
 my $tags_dir;
 
 sub FileCheck;
 sub FileNewLoadTags;
+sub FileProcPrint;
+sub FileProcWriteToFile;
 sub ParseLineWithTags;
+sub TagsClean;
 sub TagsCheck;
 sub TagsExpand;
 sub Test;
@@ -151,6 +159,26 @@ sub FileNewLoadTags {
 	closedir $tags_dir_h;
 }
 
+sub FileProcPrint {
+	(my $cur_path, my $cur_date, my $cur_record) = @_;
+
+	printf "  %s%ssave to: '%s'%s\n", $cur_record, $mark_green, $cur_path, $mark_e;
+}
+
+sub FileProcWriteToFile {
+	(my $cur_path, my $cur_date, my $cur_record) = @_;
+	my $is_new = (-f $cur_path) ? 0 : 1;
+	
+	open FILE_DAY, ">>", $cur_path or
+			die "не получается открыть файл '$cur_path'. $!.\n";
+	
+	printf FILE_DAY "%s%s",
+		$is_new ? "$cur_date\n\n" : "",
+		$cur_record;
+
+	close FILE_DAY;
+}
+
 sub ParseLineWithTags {
 	(my $tags_h, my $line, my $comment) = @_;
 
@@ -189,6 +217,27 @@ sub TagsAdd {
 	while ($command = shift @ARGV) {
 		printf "tag: $command\n";
 	}
+}
+
+sub TagsClean {
+	my $cur_tags_dir = shift;
+	my $tags_dir_h;
+	my $cur_file;
+
+	opendir $tags_dir_h, $cur_tags_dir or
+			die "ошибка: не получается открыть каталог с тегами '$cur_tags_dir'. $!.\n";
+	while ($cur_file = readdir $tags_dir_h) {
+		next if ($cur_file eq "." || $cur_file eq "..");
+		my $cur_file2 = abs_path($cur_tags_dir."/".$cur_file);
+		if (-d $cur_file2) {
+			TagsClean $cur_file2;
+		}
+		elsif ($cur_file =~ /^day/ || $cur_file =~ /^all/) {
+			printf "unlink %s\n", $cur_file2;
+			unlink $cur_file2;
+		}
+	}
+	closedir $tags_dir_h;
 }
 
 sub TagsCheck {
@@ -263,6 +312,7 @@ sub Update {
 	my @files;
 
 	CheckCreateTagsPath;
+	TagsClean $tags_dir;
 	FileNewLoadTags \@tags, $tags_dir;
 	opendir $diary_dir_h, $avg_diary_dir or die "Не получается открыть каталог '$avg_diary_dir'. $!.\n";
 	while ($cur_file = readdir $diary_dir_h) {
@@ -271,6 +321,8 @@ sub Update {
 		}
 	}
 	closedir $diary_dir_h;
+
+	my $file_proc = \&FileProcWriteToFile;
 
 	my $state_init = 1;
 	my $state_date = 2;
@@ -325,14 +377,14 @@ sub Update {
 			when ($state_rec) {
 				given ($line) {
 				when (/^[0-9]{2}\.[0-9]{2}\.[0-9]+/) {
-					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record, $file_proc;
 					@tags_in_record = ();
 					chomp $line;
 					$cur_date = $line;
 					$state = $state_date;
 				}
 				when (/^[0-9]{2}:[0-9]{2}/) {
-					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+					UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record, $file_proc;
 					@tags_in_record = ();
 					$cur_record = $line;
 				}
@@ -350,21 +402,19 @@ sub Update {
 		}
 		close DAY1;
 		if ($state == $state_rec) {
-			UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record;
+			UpdateSaveToFiles \@tags, \@tags_in_record, $cur_date, $cur_record, $file_proc;
 			$state = $state_init;
 		}
 	}
 }
 
 sub UpdateSaveToFiles {
-	(my $tags, my $tags_in_record, my $cur_date, my $cur_record) = @_;
+	(my $tags, my $tags_in_record, my $cur_date, my $cur_record, my $file_proc) = @_;
 
-	printf "file %s .. ", $cur_date;
-#	if (scalar @{$tags_in_record} == 0) {
-#		printf "ignoring\n\n";
-#		return ;
-#	}
-	printf "process\n\n";
+	if ($cur_date eq "") {
+		printf "date must be not empty.\n";
+		exit(1);
+	}
 
 	if (!TagsCheck $tags, $tags_in_record) {
 		chomp $cur_date;
@@ -374,16 +424,19 @@ sub UpdateSaveToFiles {
 
 	TagsExpand $tags_in_record;
 
-	my $mark1_b = "\033[31m";
-	my $mark2_b = "\033[32m";
-	my $mark_e = "\033[0m";
+	$cur_date =~ /([0-9]+)\.([0-9]+)\.([0-9]+)/;
+	my $filename1 = "day_$3_$2_$1.txt";
 
-	printf "%sdate: %s%s\nrecord:\n%s", $mark1_b, $cur_date, $mark_e, $cur_record;
-	for my $cur_tag (@{$tags_in_record}) {
-		my $cur_path = abs_path($avg_diary_dir."/tags/".$cur_tag);
-		printf "  %ssave to: '%s'%s\n", $mark2_b, $cur_path, $mark_e;
+	if (scalar @{$tags_in_record} == 0) {
+		my $cur_path = abs_path($avg_diary_dir."/tags/".$filename1);
+		&{$file_proc}($cur_path, $cur_date, $cur_record);
 	}
-	printf "\n" if $#{$tags_in_record} >= 0;
+	else {
+		for my $cur_tag (@{$tags_in_record}) {
+			my $cur_path = abs_path($avg_diary_dir."/tags/".$cur_tag."/".$filename1);
+			&{$file_proc}($cur_path, $cur_date, $cur_record);
+		}
+	}
 }
 
 
