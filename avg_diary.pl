@@ -39,6 +39,7 @@ sub TagsCheck;
 sub TagsExpand;
 sub Test;
 sub Update;
+sub UpdateAll;
 sub UpdateSaveToFiles;
 
 
@@ -406,6 +407,37 @@ sub Update {
 			$state = $state_init;
 		}
 	}
+	UpdateAll $tags_dir;
+}
+
+sub UpdateAll {
+	my $cur_tags_dir = shift;
+	my $tags_dir_h;
+	my $cur_file;
+
+	opendir $tags_dir_h, $cur_tags_dir or
+			die "ошибка: не получается открыть каталог с тегами '$cur_tags_dir'. $!.\n";
+	my $cur_all_filename = abs_path($cur_tags_dir."/all.txt");
+	open my $file_all, ">>", $cur_all_filename or
+			die "ошибка: не получается открыть файл '$cur_all_filename'. $!.\n";
+	while ($cur_file = readdir $tags_dir_h) {
+		next if ($cur_file eq "." || $cur_file eq "..");
+		my $cur_file2 = abs_path($cur_tags_dir."/".$cur_file);
+		if (-d $cur_file2) {
+			UpdateAll $cur_file2;
+		}
+		elsif ($cur_file =~ /^day_/) {
+			open FILE_DAY, "<", $cur_file2 or
+					die "ошибка: не получается открыть файл '$cur_file2'. $!.\n";
+			my $line;
+			while ($line = <FILE_DAY>) {
+				printf $file_all "%s", $line;
+			}
+			close FILE_DAY;
+		}
+	}
+	closedir $tags_dir_h;
+	close $file_all;
 }
 
 sub UpdateSaveToFiles {
