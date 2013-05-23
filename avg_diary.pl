@@ -33,6 +33,8 @@ sub FileCheck;
 sub FileNewLoadTags;
 sub FileProcPrint;
 sub FileProcWriteToFile;
+sub GenerateFB2;
+sub GenerateFB2Dir;
 sub ParseLineWithTags;
 sub TagsClean;
 sub TagsCheck;
@@ -178,6 +180,63 @@ sub FileProcWriteToFile {
 		$cur_record;
 
 	close FILE_DAY;
+}
+
+sub GenerateFB2 {
+	my $file_fb2;
+	my $file_fb2_filename;
+#	my $data = { };
+
+	$file_fb2_filename = abs_path($tags_dir."/book.fb2");
+	open $file_fb2, ">", $file_fb2_filename or
+			die "ошибка: не получается создать файл '$file_fb2_filename'. $!.\n";
+	printf $file_fb2
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
+		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
+		"<body>\n";
+	GenerateFB2Dir $file_fb2, $tags_dir, "", "  ";
+	printf $file_fb2
+		"</body>\n".
+		"</FictionBook>\n";
+	close $file_fb2;
+}
+
+sub GenerateFB2Dir {
+	my $file_fb2 = shift;
+	my $cur_dir = shift;
+	my $tag_name = shift;
+	my $indent = shift;
+	my $cur_dir_h;
+	my $cur_file;
+
+	opendir $cur_dir_h, $cur_dir or
+			die "ошибка: не получается открыть каталог '$cur_dir'. $!.\n";
+	while ($cur_file = readdir $cur_dir_h) {
+		next if $cur_file eq "." || $cur_file eq "..";
+
+		my $cur_file2 = abs_path($cur_dir."/".$cur_file);
+		my $sep = $tag_name eq "" ? "" : "/";
+		my $cur_tag = $tag_name.$sep.$cur_file;
+
+		if (-d $cur_file2) {
+			printf $file_fb2
+				"%s<section>\n", $indent;
+			$indent = $indent."  ";
+			printf $file_fb2
+				"%s<title>\n".
+				"%s  <p>%s</p>\n".
+				"%s</title>\n",
+				$indent,
+				$indent,
+				$cur_tag,
+				$indent;
+			printf $file_fb2 "%s<p>section for %s</p>\n", $indent, $cur_tag;
+			GenerateFB2Dir $file_fb2, $cur_file2, $cur_tag, $indent;
+			$indent =~ s/  $//;
+			printf $file_fb2 "%s</section>\n", $indent;
+		}
+	}
+	closedir $cur_dir_h;
 }
 
 sub ParseLineWithTags {
@@ -408,6 +467,7 @@ sub Update {
 		}
 	}
 	UpdateAll $tags_dir;
+	GenerateFB2;
 }
 
 sub UpdateAll {
