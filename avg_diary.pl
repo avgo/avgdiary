@@ -8,6 +8,7 @@ use Cwd qw(abs_path);
 use File::Spec;
 use POSIX qw(strftime);
 use List::MoreUtils qw(uniq);
+use avg_diary::reader;
 
 
 
