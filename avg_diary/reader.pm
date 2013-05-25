@@ -4,6 +4,8 @@ use 5.12.0;
 use Carp;
 use Cwd qw(abs_path);
 
+use avg_diary::tags;
+
 my $state_init = 1;
 my $state_date = 2;
 my $state_rec = 3;
@@ -85,17 +87,25 @@ sub fetch {
 				$self->{cur_date} = $line;
 				$self->{state} = $state_date;
 				$self->{line_num} = $line_num + 1;
-				return ($tags_in_record, $cur_date, $cur_record);
+				return {
+					tags => $tags_in_record,
+					date => $cur_date,
+					record => $cur_record
+				};
 			}
 			when (/^[0-9]{2}:[0-9]{2}/) {
 				$self->{cur_record} = $line;
 				$self->{line_num} = $line_num + 1;
 				$self->{state} = $state_rec;
-				return ($tags_in_record, $cur_date, $cur_record);
+				return {
+					tags => $tags_in_record,
+					date => $cur_date,
+					record => $cur_record
+				};
 			}
 			when (/^ +tags:/) {
-				# ParseLineWithTags $tags_in_record, $line,
-				# 		sprintf ("%s:%u", $cur_filename, $line_num);
+				avg_diary::tags::parse_line_with_tags $tags_in_record, $line,
+						sprintf ("%s:%u", $cur_filename, $line_num);
 				$cur_record = $cur_record.$line;
 			}
 			default {
@@ -110,6 +120,7 @@ sub fetch {
 	$self->close_day_file;
 	++$cur_file_index;
 	$self->{cur_file_index} = $cur_file_index;
+
 	if ($cur_file_index <= $#{$files}) {
 		$self->open_day_file;
 	}
@@ -118,7 +129,12 @@ sub fetch {
 	}
 
 	if ($state == $state_rec) {
-		return ($tags_in_record, $cur_date, $cur_record);
+		$self->{state} = $state_date;
+		return {
+			tags => $tags_in_record,
+			date => $cur_date,
+			record => $cur_record
+		};
 	}
 
 	return;
@@ -162,7 +178,7 @@ sub open_day_file {
 	my $cur_file_index = $self->{cur_file_index};
 	my $cur_filename = $files->[$cur_file_index];
 
-	open $fd, "<", $cur_filename or
+	open my $fd, "<", $cur_filename or
 			Carp::croak("ошибка: не получается открыть файл '$cur_filename'. $!.\n");
 
 	$self->{fd} = $fd;

@@ -8,7 +8,9 @@ use Cwd qw(abs_path);
 use File::Spec;
 use POSIX qw(strftime);
 use List::MoreUtils qw(uniq);
+
 use avg_diary::reader;
+use avg_diary::tags;
 
 
 
@@ -36,7 +38,6 @@ sub FileProcPrint;
 sub FileProcWriteToFile;
 sub GenerateFB2;
 sub GenerateFB2Dir;
-sub ParseLineWithTags;
 sub TagsClean;
 sub TagsCheck;
 sub TagsExpand;
@@ -136,7 +137,7 @@ sub FileCheck {
 		chomp $line;
 		given ($line) {
 		when (/^ *tags:/) {
-			ParseLineWithTags \@tags_in_file, $line, "";
+			avg_diary::tags::parse_line_with_tags \@tags_in_file, $line, "";
 		}}
 	}
 	TagsCheck \@tags, \@tags_in_file;
@@ -238,25 +239,6 @@ sub GenerateFB2Dir {
 		}
 	}
 	closedir $cur_dir_h;
-}
-
-sub ParseLineWithTags {
-	(my $tags_h, my $line, my $comment) = @_;
-
-	chomp $line;
-	$line =~ s/^ *tags: *//g;
-	while ($line) {
-		if ( ! ($line =~ s/^\[([^\]]*)\][, ]*//)) {
-			printf "%s:некорректное определение тега: |%s|%s|\n", $comment, $1, $line;
-			$line = "";
-		}
-		elsif ($1 eq "") {
-			printf "пустой тег\n";
-		}
-		else {
-			push @{$tags_h}, $1;
-		}
-	}
 }
 
 sub PrintUsage {
@@ -450,7 +432,7 @@ sub Update {
 					$cur_record = $line;
 				}
 				when (/^ +tags:/) {
-					ParseLineWithTags \@tags_in_record, $line, "$file2:$line_num";
+					avg_diary::tags::parse_line_with_tags \@tags_in_record, $line, "$file2:$line_num";
 					$cur_record = $cur_record.$line;
 				}
 				default {
