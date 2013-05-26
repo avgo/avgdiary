@@ -4,9 +4,15 @@
 use 5.12.0;
 use strict;
 use avg_diary::reader;
+use Cwd qw(abs_path);
+
+
+
+
+my $avg_diary_dir = abs_path('/media/F085-5411/diary/');
 
 sub test1 {
-	my $reader = avg_diary::reader->new(avg_diary_dir => '/mnt/flash/diary');
+	my $reader = avg_diary::reader->new(avg_diary_dir => $avg_diary_dir);
 
 	$reader->first;
 	while (my $rec = $reader->fetch) {
@@ -15,7 +21,7 @@ sub test1 {
 }
 
 sub test2 {
-	my $reader = avg_diary::reader->new(avg_diary_dir => '/mnt/flash/diary');
+	my $reader = avg_diary::reader->new(avg_diary_dir => $avg_diary_dir);
 
 	my $tags_in_record;
 	my $rec;
@@ -34,7 +40,7 @@ sub test2 {
 }
 
 sub view_all {
-	my $reader = avg_diary::reader->new(avg_diary_dir => '/mnt/flash/diary');
+	my $reader = avg_diary::reader->new(avg_diary_dir => $avg_diary_dir);
 	my $date_old;
 
 	$reader->first;
@@ -50,7 +56,11 @@ sub view_all {
 	}
 }
 
+sub view_all2 {
+	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
+}
 
 
 
-view_all;
+
+view_all2;

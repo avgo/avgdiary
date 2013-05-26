@@ -25,6 +25,7 @@ my $action_filename = 4;
 my $action_tags = 5;
 my $action_test = 6;
 my $action_update = 7;
+my $action_view_all = 8;
 
 my $mark_red = "\033[31m";
 my $mark_green = "\033[32m";
@@ -45,6 +46,7 @@ sub Test;
 sub Update;
 sub UpdateAll;
 sub UpdateSaveToFiles;
+sub ViewAll;
 
 
 
@@ -67,7 +69,7 @@ sub AvgDiaryDirCheck {
 
 sub AvgDiaryDirEnv {
 	return if $avg_diary_dir ne "";
-	$avg_diary_dir = $ENV{avg_diary_dir};
+	$avg_diary_dir = abs_path $ENV{avg_diary_dir};
 }
 
 sub CheckCreateTagsPath {
@@ -514,6 +516,10 @@ sub UpdateSaveToFiles {
 	}
 }
 
+sub ViewAll {
+	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
+}
+
 
 
 
@@ -532,7 +538,7 @@ my $file_name = "";
 while (($command = shift @ARGV) && $command =~ /^--/) {
 	given ($command) {
 		when (/^--avg-diary-dir=(.*)/) {
-			$avg_diary_dir = $1;
+			$avg_diary_dir = abs_path $1;
 		}
 		when (/^--file=(.*)/) {
 			$file_name = $1;
@@ -556,8 +562,10 @@ given ($command) {
 	when (/^edit$/)		{ $action = $action_edit; }
 	when (/^filename$/)	{ $action = $action_filename; }
 	when (/^tags$/)		{ $action = $action_tags; }
-	when (/^test$/)         { $action = $action_test; }
+	when (/^test$/)		{ $action = $action_test; }
 	when (/^update$/)	{ $action = $action_update; }
+	when (/^view-all$/)	{ $action = $action_view_all; }
+	when (/^viewall$/)	{ $action = $action_view_all; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
@@ -609,6 +617,9 @@ given ($action) {
 	}
 	when ($action_update) {
 		Update;
+	}
+	when ($action_view_all) {
+		ViewAll;
 	}
 	default {
 		printf STDERR "ошибка: неизвестный action: '$action'.\n";
