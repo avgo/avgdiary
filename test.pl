@@ -11,6 +11,28 @@ use Cwd qw(abs_path);
 
 my $avg_diary_dir = abs_path('/media/F085-5411/diary/');
 
+my $m_red;
+my $m_green;
+my $m_e;
+my $mark_red = "\033[31m";
+my $mark_green = "\033[32m";
+my $mark_e = "\033[0m";
+
+
+sub color_enable($) {
+	if (shift) {
+		$m_red = $mark_red;
+		$m_green = $mark_green;
+		$m_e = $mark_e;
+	}
+	else {
+		$m_red = "";
+		$m_green = "";
+		$m_e = "";
+	}
+
+}
+
 sub test1 {
 	my $reader = avg_diary::reader->new(avg_diary_dir => $avg_diary_dir);
 
@@ -40,19 +62,26 @@ sub test2 {
 }
 
 sub view_all {
-	my $reader = avg_diary::reader->new(avg_diary_dir => $avg_diary_dir);
+	my $reader = avg_diary::reader->new(
+			avg_diary_dir => $avg_diary_dir,
+			cut_time => 0,
+			cut_spaces => 0);
 	my $date_old;
+	my $display_time = 0;
+
+	color_enable(0);
 
 	$reader->first;
 	while (my $rec = $reader->fetch) {
 		my $date = $rec->{date};
 
 		if ($date ne $date_old) {
-			printf "%s\n\n", $date;
+			printf "%s%s%s\n\n", $m_red, $date, $m_e;
 			$date_old = $date;
 		}
-
-		printf "%s", $rec->{record};
+		printf "%s%s",
+			($display_time) ? sprintf("%s%s%s\n\n", $m_green, $rec->{time}, $m_e):"",
+			$rec->{record};
 	}
 }
 
@@ -63,4 +92,13 @@ sub view_all2 {
 
 
 
-view_all2;
+if (scalar @ARGV == 1) {
+	my $proc_name = shift @ARGV;
+	my %tbl = (
+		"--view-all" => \&view_all,
+		"--view-all2" => \&view_all2,
+	);
+	my $proc = $tbl{$proc_name};
+	die sprintf("ошибка: нет такой команды '%s'.\n", $proc_name) if not defined $proc;
+	&{$proc};
+}

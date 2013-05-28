@@ -14,10 +14,18 @@ sub new {
 	my ($class, %cnf) = @_;
 	my $avg_diary_dir = delete $cnf{avg_diary_dir};
 
+	my $cut_time = delete $cnf{cut_time};
+	$cut_time = 0 unless defined $cut_time;
+
+	my $cut_spaces = delete $cnf{cut_spaces};
+	$cut_spaces = 0 unless defined $cut_spaces;
+
 	Carp::croak("dont know\n") if not defined ($avg_diary_dir);
 
 	my $self = {
-		avg_diary_dir => $avg_diary_dir
+		avg_diary_dir	=> $avg_diary_dir,
+		cut_time	=> $cut_time,
+		cut_spaces	=> $cut_spaces
 	};
 
 	bless $self, $class;
@@ -31,12 +39,15 @@ sub fetch {
 	my $fd = $self->{fd};
 	my $state = $self->{state};
 	my $cur_date = $self->{cur_date};
+	my $cur_time = $self->{cur_time};
 	my $cur_record;
 	my $tags_in_record = [ ];
 	my $line_num = $self->{line_num};
 	my $cur_file_index = $self->{cur_file_index};
 	my $cur_filename = $self->{cur_filename};
 	my $files = $self->{files};
+	my $cut_time = $self->{cut_time};
+	my $cut_spaces = $self->{cut_spaces};
 
 	if ($cur_file_index > $#{$files}) {
 		return ;
@@ -70,6 +81,13 @@ sub fetch {
 				$self->{cur_date} = $cur_date;
 			}
 			when (/^[0-9]{2}:[0-9]{2}/) {
+				$line =~ /^([0-9]{2}:[0-9]{2})/;
+				$cur_time = $1;
+				$self->{cur_time} = $1;
+
+				$line =~ s/^[0-9]{2}:[0-9]{2}/     / if ($cut_time);
+				$line =~ s/^ *// if ($cut_spaces);
+
 				$cur_record = $line;
 				$state = $state_rec;
 			}
@@ -90,25 +108,35 @@ sub fetch {
 				return {
 					tags => $tags_in_record,
 					date => $cur_date,
+					time => $cur_time,
 					record => $cur_record
 				};
 			}
 			when (/^[0-9]{2}:[0-9]{2}/) {
+				$line =~ /^([0-9]{2}:[0-9]{2})/;
+				$self->{cur_time} = $1;
+
+				$line =~ s/^[0-9]{2}:[0-9]{2}/     / if ($cut_time);
+				$line =~ s/^ *// if ($cut_spaces);
+
 				$self->{cur_record} = $line;
 				$self->{line_num} = $line_num + 1;
 				$self->{state} = $state_rec;
 				return {
 					tags => $tags_in_record,
 					date => $cur_date,
+					time => $cur_time,
 					record => $cur_record
 				};
 			}
 			when (/^ +tags:/) {
 				avg_diary::tags::parse_line_with_tags $tags_in_record, $line,
 						sprintf ("%s:%u", $cur_filename, $line_num);
+				$line =~ s/^ *// if ($cut_spaces);
 				$cur_record = $cur_record.$line;
 			}
 			default {
+				$line =~ s/^ *// if ($cut_spaces);
 				$cur_record = $cur_record.$line;
 			}
 			}
@@ -133,6 +161,7 @@ sub fetch {
 		return {
 			tags => $tags_in_record,
 			date => $cur_date,
+			time => $cur_time,
 			record => $cur_record
 		};
 	}

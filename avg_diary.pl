@@ -24,8 +24,9 @@ my $action_edit = 3;
 my $action_filename = 4;
 my $action_tags = 5;
 my $action_test = 6;
-my $action_update = 7;
-my $action_view_all = 8;
+my $action_tofb2 = 7;
+my $action_update = 8;
+my $action_view_all = 9;
 
 my $mark_red = "\033[31m";
 my $mark_green = "\033[32m";
@@ -43,6 +44,7 @@ sub TagsClean;
 sub TagsCheck;
 sub TagsExpand;
 sub Test;
+sub ToFB2;
 sub Update;
 sub UpdateAll;
 sub UpdateSaveToFiles;
@@ -350,6 +352,18 @@ sub Test {
 	}
 }
 
+sub ToFB2 {
+	my $fb2_dir = shift;
+
+	die sprintf "ошибка: %s не каталог.\n", $fb2_dir if (!(-d $fb2_dir));
+
+	
+	my $reader = avg_diary::reader->new(
+			avg_diary_dir => $avg_diary_dir,
+			cut_time => 1,
+			cut_spaces => 1);
+}
+
 sub Update {
 	my @tags;
 	my $diary_dir_h;
@@ -563,9 +577,9 @@ given ($command) {
 	when (/^filename$/)	{ $action = $action_filename; }
 	when (/^tags$/)		{ $action = $action_tags; }
 	when (/^test$/)		{ $action = $action_test; }
+	when (/^tofb2$/)	{ $action = $action_tofb2; }
 	when (/^update$/)	{ $action = $action_update; }
-	when (/^view-all$/)	{ $action = $action_view_all; }
-	when (/^viewall$/)	{ $action = $action_view_all; }
+	when (/^view-?all$/)	{ $action = $action_view_all; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
@@ -614,6 +628,23 @@ given ($action) {
 	}
 	when ($action_test) {
 		Test;
+	}
+	when ($action_tofb2) {
+		if (scalar @ARGV != 1) {
+			printf "ошибка: нужно указать путь к fb2-книге.\n";
+			PrintUsage;
+			exit(1);
+		}
+		my $fb2_arg = shift @ARGV;
+		if ($fb2_arg =~ /^--filename=(.*)/) {
+			ToFB2 $1;
+		}
+		else {
+			printf "ошибка: не корректно указан параметр '%s'.\n",
+					$fb2_arg;
+			PrintUsage;
+			exit(1);
+		}
 	}
 	when ($action_update) {
 		Update;
