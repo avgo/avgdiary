@@ -61,7 +61,7 @@ sub test2 {
 	$reader->first;
 }
 
-sub view_all {
+sub test3_view_all {
 	my $reader = avg_diary::reader->new(
 			avg_diary_dir => $avg_diary_dir,
 			cut_time => 0,
@@ -85,8 +85,16 @@ sub view_all {
 	}
 }
 
-sub view_all2 {
+sub test3_view_all2 {
 	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
+}
+
+sub test3 {
+	exec "bash", "-c",
+		"./test.pl --view-all > /tmp/1.txt && ".
+		"./test.pl --view-all2 > /tmp/2.txt && ".
+		"diff -q /tmp/1.txt /tmp/2.txt && ".
+		"echo success || echo fail";
 }
 
 
@@ -95,8 +103,9 @@ sub view_all2 {
 if (scalar @ARGV == 1) {
 	my $proc_name = shift @ARGV;
 	my %tbl = (
-		"--view-all" => \&view_all,
-		"--view-all2" => \&view_all2,
+		"--test3" => \&test3,
+		"--view-all" => \&test3_view_all,
+		"--view-all2" => \&test3_view_all2,
 	);
 	my $proc = $tbl{$proc_name};
 	die sprintf("ошибка: нет такой команды '%s'.\n", $proc_name) if not defined $proc;
