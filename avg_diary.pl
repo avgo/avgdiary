@@ -1,5 +1,10 @@
 #!/usr/bin/env perl
 
+#
+# avg-diary - program for text diaries with tags.
+# Anton Goncharov, 2013
+#
+
 # require v5.6;
 use 5.12.0;
 use strict;
@@ -34,6 +39,7 @@ my $mark_e = "\033[0m";
 
 my $tags_dir;
 
+sub CopyDirStructure($$);
 sub FileCheck;
 sub FileNewLoadTags;
 sub FileProcPrint;
@@ -45,6 +51,8 @@ sub TagsCheck;
 sub TagsExpand;
 sub Test;
 sub ToFB2;
+sub ToFB2WriteRecords;
+sub ToFB2WriteRecordToFile($$$$);
 sub Update;
 sub UpdateAll;
 sub UpdateSaveToFiles;
@@ -79,6 +87,25 @@ sub CheckCreateTagsPath {
 	if (! -d $tags_dir) {
 		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
 	}
+}
+
+sub CopyDirStructure($$) {
+	(my $src, my $dst) = @_;
+
+	opendir my $src_h, $src or die sprintf("ошибка: не получается открыть исходный каталог '%s'.\n", $src);
+
+	while (my $src2 = readdir $src_h) {
+		next if ($src2 eq ".") or ($src2 eq "..");
+		my $src3 = abs_path($src."/".$src2);
+		next if not -d $src3;
+		my $dst3 = abs_path($dst."/".$src2);
+		mkdir $dst3 or die sprintf(
+				"ошибка: не получается создать каталог назначения '%s'.\n",
+				$dst3);
+		CopyDirStructure $src3, $dst3;
+	}
+
+	closedir $src_h;
 }
 
 sub FileAddEntry {
@@ -255,6 +282,7 @@ sub PrintUsage {
 		"    $AppName help        Вывести справку.\n".
 		"    $AppName tags list   Вывести список доступных тегов.\n".
 		"    $AppName filename    Вывести имя текущего файла.\n".
+		"    $AppName tofb2       Сохранить дневник в формате электронной книги.\n".
 		"    $AppName view-all    Читать весь дневник.\n";
 }
 
@@ -357,11 +385,144 @@ sub ToFB2 {
 
 	die sprintf "ошибка: %s не каталог.\n", $fb2_dir if (!(-d $fb2_dir));
 
+	my $tmp_dir = "/tmp/diary-fb2.tmp";
+	system "rm -rf $tmp_dir";
+	mkdir $tmp_dir or die sprintf(
+			"ошибка: не получается создать каталог '%s'. %s.\n",
+			$tmp_dir, $!);
+	CheckCreateTagsPath $tags_dir;
+	CopyDirStructure $tags_dir, $tmp_dir;
 	
 	my $reader = avg_diary::reader->new(
 			avg_diary_dir => $avg_diary_dir,
 			cut_time => 1,
 			cut_spaces => 1);
+	$reader->first;
+	while (my $rec = $reader->fetch) {
+		my $tags = $rec->{tags};
+		my $date = $rec->{date};
+		$date =~ /0*([0-9]+)\.0*([0-9]+)\.0*([0-9]+)/;
+		my $day_filename = sprintf "day_%04u_%02u_%02u.html", $3, $2, $1;
+		if ($#{$tags} >= 0) {
+			for my $cur_tag (@{$tags}) {
+				my $filename = abs_path(
+						$tmp_dir."/".$cur_tag."/".$day_filename);
+				ToFB2WriteRecordToFile
+						$filename,
+						$rec->{date},
+						$rec->{time},
+						$rec->{record};
+			}
+		}
+		else {
+			my $filename = abs_path($tmp_dir."/".$day_filename);
+			ToFB2WriteRecordToFile
+					$filename,
+					$rec->{date},
+					$rec->{time},
+					$rec->{record};
+		}
+	}
+
+	my $fb2_filename = $fb2_dir."/book.fb2";
+	open my $fb2_file, ">", $fb2_filename or die sprintf(
+			"ошибка: не получается открыть файл '%s'. %s.\n",
+			$fb2_filename, $!);
+	printf $fb2_file
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
+		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
+		"<body>\n";
+	ToFB2WriteRecords $fb2_file, $tmp_dir, "";
+	printf $fb2_file
+		"</body>\n".
+		"</FictionBook>\n";
+	close $fb2_file;
+	system "rm -rf $tmp_dir";
+}
+
+sub ToFB2WriteRecords {
+	(my $fb2_file, my $dir, my $tag) = @_;
+
+	my @dirs;
+	my @files;
+
+	opendir my $dir_h, $dir or die sprintf(
+			"ошибка: не получается открыть каталог '%s'. %s.\n",
+			$dir, $!);
+	while (my $cur_file = readdir $dir_h) {
+		next if $cur_file eq "." or $cur_file eq "..";
+		my $cur_file2 = abs_path($dir."/".$cur_file);
+		if (-d $cur_file2) {
+			push @dirs, $cur_file;
+		}
+		elsif (-f $cur_file2 && $cur_file =~ /^day_/) {
+			push @files, $cur_file;
+		}
+	}
+	closedir $dir_h;
+
+	for my $cur_dir (sort @dirs) {
+		my $cur_dir2 = abs_path($dir."/".$cur_dir);
+		my $cur_tag = ($tag eq "") ? $cur_dir : $tag."/".$cur_dir;
+		ToFB2WriteRecords $fb2_file, $cur_dir2, $cur_tag;
+	}
+
+	my $tag_text;
+
+	if ($tag eq "") {
+		$tag_text = "без тега";
+	}
+	else {
+		$tag_text = $tag;
+		$tag_text =~ s/&/&amp;/g;
+		$tag_text =~ s/</&lt;/g;
+		$tag_text =~ s/>/&gt;/g;
+	}
+
+	printf $fb2_file
+		"<section>\n".
+		"<title>\n".
+		"  <p>%s</p>\n".
+		"</title>\n", $tag_text;
+	for my $cur_file (sort @files) {
+		my $cur_file2 = abs_path($dir."/".$cur_file);
+		open my $fd, "<", $cur_file2 or
+				die sprintf ("ошибка: не получается открыть файл '%s'. %s.\n",
+				$cur_file2, $!);
+		while (my $line = <$fd>) { print $fb2_file "  ",$line; }
+		close $fd;
+	}
+	printf $fb2_file "</section>\n";
+}
+
+sub ToFB2WriteRecordToFile($$$$) {
+	(my $filename, my $date, my $time, my $record) = @_;
+	my $new_file = (-f $filename) ? 0 : 1;
+
+	$record =~ s/&/&amp;/g;
+	$record =~ s/</&lt;/g;
+	$record =~ s/>/&gt;/g;
+	$record =~ s/$/<\/v>/mg;
+	$record =~ s/^/  <v>/mg;
+
+	open my $fd, ">>", $filename or die
+		sprintf("ошибка: не получается открыть файл '%s'. %s.\n", $filename, $!);
+	printf $fd
+		"<p>\n".
+		"  <strong>%s</strong>\n".
+		"</p>\n",
+		$date if $new_file;
+	printf $fd
+		"<p>\n".
+		"  <strong>%s</strong>\n".
+		"</p>\n".
+		"<poem>\n".
+		"<stanza>\n".
+		"%s\n".
+		"</stanza>\n".
+		"</poem>\n",
+		$time, $record;
+	close $fd;
 }
 
 sub Update {
