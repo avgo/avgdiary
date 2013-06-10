@@ -61,25 +61,20 @@ sub ViewAll;
 
 
 
-sub AvgDiaryDirCheck {
-	if ($avg_diary_dir eq "") {
-		printf STDERR "ошибка: не указан путь к дневнику.\n".
-		              "Укажите правильный путь к дневнику в вашей оболочке\n".
-			      "export avg_diary_dir=<dir>\n";
-		exit(1);
-	}
-	
-	if (! -d $avg_diary_dir) {
-		printf STDERR "ошибка: '$avg_diary_dir' не является каталогом.\n".
-		              "Укажите правильный путь к дневнику в вашей оболочке\n".
-			      "export avg_diary_dir=<dir>\n";
-		exit(1);
-	}
-}
-
 sub AvgDiaryDirEnv {
-	return if $avg_diary_dir ne "";
-	$avg_diary_dir = abs_path $ENV{avg_diary_dir};
+	$avg_diary_dir = $ENV{avg_diary_dir};
+
+	die	"ошибка: не указан путь к дневнику.\n".
+		"Укажите правильный путь к дневнику в вашей оболочке\n".
+		"export avg_diary_dir=<dir>\n"
+		if $avg_diary_dir eq "";
+
+	die	"ошибка: '$avg_diary_dir' не является каталогом.\n".
+		"Укажите правильный путь к дневнику в вашей оболочке\n".
+		"export avg_diary_dir=<dir>\n"
+		if not -d $avg_diary_dir;
+
+	$avg_diary_dir = abs_path $avg_diary_dir;
 }
 
 sub CheckCreateTagsPath {
@@ -749,7 +744,6 @@ given ($command) {
 }
 
 AvgDiaryDirEnv;
-AvgDiaryDirCheck;
 
 $date1 = strftime("%Y_%m_%d", localtime);
 if ($file_name eq "") {
