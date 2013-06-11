@@ -30,8 +30,9 @@ my $action_filename = 4;
 my $action_tags = 5;
 my $action_test = 6;
 my $action_tofb2 = 7;
-my $action_update = 8;
-my $action_view_all = 9;
+my $action_tofb2_by_tags = 8;
+my $action_update = 9;
+my $action_view_all = 10;
 
 my $mark_red = "\033[31m";
 my $mark_green = "\033[32m";
@@ -50,9 +51,10 @@ sub TagsClean;
 sub TagsCheck;
 sub TagsExpand;
 sub Test;
-sub ToFB2;
-sub ToFB2WriteRecords;
-sub ToFB2WriteRecordToFile($$$$);
+sub ToFB2BT;
+sub ToFB2Normal;
+sub ToFB2BTWriteRecords;
+sub ToFB2BTWriteRecordToFile($$$$);
 sub Update;
 sub UpdateAll;
 sub UpdateSaveToFiles;
@@ -269,16 +271,21 @@ sub GenerateFB2Dir {
 
 sub PrintUsage {
 	my $AppName = $0;
-	printf 
-		"ДЕЛАЙ ТАК:\n".
-		"    $AppName add         Добавить запись в дневник. Или завести новый.\n".
-		"    $AppName addrep      Добавить запись-отчёт в дневник. Или завести новый.\n".
-		"    $AppName edit        Редактировать сегодняшнюю запись.\n".
-		"    $AppName help        Вывести справку.\n".
-		"    $AppName tags list   Вывести список доступных тегов.\n".
-		"    $AppName filename    Вывести имя текущего файла.\n".
-		"    $AppName tofb2       Сохранить дневник в формате электронной книги.\n".
-		"    $AppName view-all    Читать весь дневник.\n";
+	my $AppNameStr = " " x length $AppName;
+	printf	"ДЕЛАЙ ТАК:\n".
+		"    $AppName add          Добавить запись в дневник. Или завести новый.\n".
+		"    $AppName addrep       Добавить запись-отчёт в дневник. Или завести новый.\n".
+		"    $AppName edit         Редактировать сегодняшнюю запись.\n".
+		"    $AppName help         Вывести справку.\n".
+		"    $AppName tags list    Вывести список доступных тегов.\n".
+		"    $AppName filename     Вывести имя текущего файла.\n".
+		"    $AppName tofb2 <filename>\n".
+		$AppNameStr."                  Сохранить дневник в формате электронной книги.\n".
+		$AppNameStr."                  Сохранить записи в том порядке в котором они следуют\n".
+		$AppNameStr."                  в дневнике.\n".
+		"    $AppName tofb2-by-tags <filename>\n".
+		$AppNameStr."                  Сохранить дневник в формате электронной книги.\n".
+		"    $AppName view-all     Читать весь дневник.\n";
 }
 
 sub TagsAdd {
@@ -375,7 +382,7 @@ sub Test {
 	}
 }
 
-sub ToFB2 {
+sub ToFB2BT {
 	my $fb2_dir = shift;
 
 	die sprintf "ошибка: %s не каталог.\n", $fb2_dir if (!(-d $fb2_dir));
@@ -402,7 +409,7 @@ sub ToFB2 {
 			for my $cur_tag (@{$tags}) {
 				my $filename = abs_path(
 						$tmp_dir."/".$cur_tag."/".$day_filename);
-				ToFB2WriteRecordToFile
+				ToFB2BTWriteRecordToFile
 						$filename,
 						$rec->{date},
 						$rec->{time},
@@ -411,7 +418,7 @@ sub ToFB2 {
 		}
 		else {
 			my $filename = abs_path($tmp_dir."/".$day_filename);
-			ToFB2WriteRecordToFile
+			ToFB2BTWriteRecordToFile
 					$filename,
 					$rec->{date},
 					$rec->{time},
@@ -427,7 +434,7 @@ sub ToFB2 {
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
 		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
 		"<body>\n";
-	ToFB2WriteRecords $fb2_file, $tmp_dir, "";
+	ToFB2BTWriteRecords $fb2_file, $tmp_dir, "";
 	printf $fb2_file
 		"</body>\n".
 		"</FictionBook>\n";
@@ -435,7 +442,7 @@ sub ToFB2 {
 	system "rm -rf $tmp_dir";
 }
 
-sub ToFB2WriteRecords {
+sub ToFB2BTWriteRecords {
 	(my $fb2_file, my $dir, my $tag) = @_;
 
 	my @dirs;
@@ -459,7 +466,7 @@ sub ToFB2WriteRecords {
 	for my $cur_dir (sort @dirs) {
 		my $cur_dir2 = abs_path($dir."/".$cur_dir);
 		my $cur_tag = ($tag eq "") ? $cur_dir : $tag."/".$cur_dir;
-		ToFB2WriteRecords $fb2_file, $cur_dir2, $cur_tag;
+		ToFB2BTWriteRecords $fb2_file, $cur_dir2, $cur_tag;
 	}
 
 	my $tag_text;
@@ -490,7 +497,7 @@ sub ToFB2WriteRecords {
 	printf $fb2_file "</section>\n";
 }
 
-sub ToFB2WriteRecordToFile($$$$) {
+sub ToFB2BTWriteRecordToFile($$$$) {
 	(my $filename, my $date, my $time, my $record) = @_;
 	my $new_file = (-f $filename) ? 0 : 1;
 
@@ -517,6 +524,60 @@ sub ToFB2WriteRecordToFile($$$$) {
 		"</stanza>\n".
 		"</poem>\n",
 		$time, $record;
+	close $fd;
+}
+
+sub ToFB2Normal {
+	my $filename = shift;
+	
+	my $reader = avg_diary::reader->new(
+			avg_diary_dir => $avg_diary_dir,
+			cut_time => 1,
+			cut_spaces => 1);
+	$reader->first;
+	open my $fd, ">", $filename or
+			die "ошибка: не получается создать файл '$filename'. $!.\n";
+	printf $fd
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
+		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
+		"<body>\n";
+	my $date_last;
+	while (my $rec = $reader->fetch) {
+		my $date = $rec->{date};
+		if ($date ne $date_last) {
+			printf	$fd
+				"</section>\n" if $date_last ne "";
+			printf	$fd
+				"<section>\n".
+				"<title>\n".
+				"  <p>%s</p>\n".
+				"</title>\n", $date;
+			$date_last = $date;
+		}
+
+		my $time = $rec->{time};
+		my $record = $rec->{record};
+		$record =~ s/&/&amp;/g;
+		$record =~ s/</&lt;/g;
+		$record =~ s/>/&gt;/g;
+		$record =~ s/$/<\/v>/mg;
+		$record =~ s/^/  <v>/mg;
+
+		printf $fd
+			"<p>\n".
+			"  <strong>%s</strong>\n".
+			"</p>\n".
+			"<poem>\n".
+			"<stanza>\n".
+			"%s\n".
+			"</stanza>\n".
+			"</poem>\n",
+			$time, $record;
+	}
+	printf $fd
+		"</section>\n".
+		"</body>\n".
+		"</FictionBook>\n";
 	close $fd;
 }
 
@@ -727,15 +788,16 @@ given ($command) {
 		PrintUsage;
 		exit(1);
 	}
-	when (/^add$/)		{ $action = $action_add; }
-	when (/^addrep$/)	{ $action = $action_addrep; }
-	when (/^edit$/)		{ $action = $action_edit; }
-	when (/^filename$/)	{ $action = $action_filename; }
-	when (/^tags$/)		{ $action = $action_tags; }
-	when (/^test$/)		{ $action = $action_test; }
-	when (/^tofb2$/)	{ $action = $action_tofb2; }
-	when (/^update$/)	{ $action = $action_update; }
-	when (/^view-?all$/)	{ $action = $action_view_all; }
+	when (/^add$/)			{ $action = $action_add; }
+	when (/^addrep$/)		{ $action = $action_addrep; }
+	when (/^edit$/)			{ $action = $action_edit; }
+	when (/^filename$/)		{ $action = $action_filename; }
+	when (/^tags$/)			{ $action = $action_tags; }
+	when (/^test$/)			{ $action = $action_test; }
+	when (/^tofb2$/)		{ $action = $action_tofb2; }
+	when (/^tofb2-by-tags$/)	{ $action = $action_tofb2_by_tags; }
+	when (/^update$/)		{ $action = $action_update; }
+	when (/^view-?all$/)		{ $action = $action_view_all; }
 	default {
 		printf STDERR "ошибка: неверный параметр: '$command'.\n";
 		PrintUsage;
@@ -791,15 +853,16 @@ given ($action) {
 			exit(1);
 		}
 		my $fb2_arg = shift @ARGV;
-		if ($fb2_arg =~ /^--filename=(.*)/) {
-			ToFB2 $1;
-		}
-		else {
-			printf "ошибка: не корректно указан параметр '%s'.\n",
-					$fb2_arg;
+		ToFB2Normal $fb2_arg;
+	}
+	when ($action_tofb2_by_tags) {
+		if (scalar @ARGV != 1) {
+			printf "ошибка: нужно указать путь к fb2-книге.\n";
 			PrintUsage;
 			exit(1);
 		}
+		my $fb2_arg = shift @ARGV;
+		ToFB2BT $fb2_arg;
 	}
 	when ($action_update) {
 		Update;
