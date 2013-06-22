@@ -383,9 +383,7 @@ sub Test {
 }
 
 sub ToFB2BT {
-	my $fb2_dir = shift;
-
-	die sprintf "ошибка: %s не каталог.\n", $fb2_dir if (!(-d $fb2_dir));
+	my $fb2_filename = shift;
 
 	my $tmp_dir = "/tmp/diary-fb2.tmp";
 	system "rm -rf $tmp_dir";
@@ -426,7 +424,6 @@ sub ToFB2BT {
 		}
 	}
 
-	my $fb2_filename = $fb2_dir."/book.fb2";
 	open my $fb2_file, ">", $fb2_filename or die sprintf(
 			"ошибка: не получается открыть файл '%s'. %s.\n",
 			$fb2_filename, $!);
