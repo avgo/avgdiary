@@ -5,10 +5,8 @@
 # Anton Goncharov, 2013
 #
 
-# require v5.6;
 use 5.12.0;
 use strict;
-# use warnings;
 use Cwd qw(abs_path);
 use File::Spec;
 use POSIX qw(strftime);
