@@ -21,16 +21,6 @@ use avg_diary::tags;
 my $date1;
 my $file_new;
 my $avg_diary_dir;
-my $action_add = 1;
-my $action_addrep = 2;
-my $action_edit = 3;
-my $action_filename = 4;
-my $action_tags = 5;
-my $action_test = 6;
-my $action_tofb2 = 7;
-my $action_tofb2_by_tags = 8;
-my $action_update = 9;
-my $action_view_all = 10;
 
 my $mark_red = "\033[31m";
 my $mark_green = "\033[32m";
@@ -38,6 +28,16 @@ my $mark_e = "\033[0m";
 
 my $tags_dir;
 
+sub action_add;
+sub action_addrep;
+sub action_edit;
+sub action_filename;
+sub action_tags;
+sub action_test;
+sub action_tofb2;
+sub action_tofb2_by_tags;
+sub action_update;
+sub action_view_all;
 sub CopyDirStructure($$);
 sub FileCheck;
 sub FileNewLoadTags;
@@ -56,7 +56,6 @@ sub ToFB2BTWriteRecordToFile($$$$);
 sub Update;
 sub UpdateAll;
 sub UpdateSaveToFiles;
-sub ViewAll;
 
 
 
@@ -118,7 +117,7 @@ sub FileAddEntry {
 	}
 	
 	given ($prefix) {
-		when ($action_addrep) {
+		when (1) {
 			$prefix2 = "[ОТЧЁТ]    ";
 		}
 	}
@@ -742,10 +741,6 @@ sub UpdateSaveToFiles {
 	}
 }
 
-sub ViewAll {
-	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
-}
-
 
 
 
@@ -754,14 +749,10 @@ if (scalar @ARGV == 0) {
 	exit 1;
 }
 
-
-
-
-my $action;
-my $command;
+my $command = shift @ARGV;
 my $file_name = "";
 
-while (($command = shift @ARGV) && $command =~ /^--/) {
+while ($command =~ /^--/) {
 	given ($command) {
 		when (/^--avg-diary-dir=(.*)/) {
 			$avg_diary_dir = abs_path $1;
@@ -770,35 +761,38 @@ while (($command = shift @ARGV) && $command =~ /^--/) {
 			$file_name = $1;
 		}
 		default {
-			printf STDERR "ошибка: неизвестный параметр '$command'.\n";
+			printf STDERR "ошибка: неизвестная опция '$command'.\n";
 			PrintUsage;
 			exit(1);
 		}
 	}
+	$command = shift @ARGV;
+	if (not defined $command) {
+		printf STDERR "ошибка: не указана команда.\n";
+		PrintUsage;
+		exit(1);
+	}
 }
 
-given ($command) {
-	when (/^$/) {
-		printf STDERR "ошибка: не указано действие.\n";
-		PrintUsage;
-		exit(1);
-	}
-	when (/^add$/)			{ $action = $action_add; }
-	when (/^addrep$/)		{ $action = $action_addrep; }
-	when (/^edit$/)			{ $action = $action_edit; }
-	when (/^filename$/)		{ $action = $action_filename; }
-	when (/^tags$/)			{ $action = $action_tags; }
-	when (/^test$/)			{ $action = $action_test; }
-	when (/^tofb2$/)		{ $action = $action_tofb2; }
-	when (/^tofb2-by-tags$/)	{ $action = $action_tofb2_by_tags; }
-	when (/^update$/)		{ $action = $action_update; }
-	when (/^view-?all$/)		{ $action = $action_view_all; }
-	default {
-		printf STDERR "ошибка: неверный параметр: '$command'.\n";
-		PrintUsage;
-		exit(1);
-	}
+if ($command =~ /^-/) {
+	printf STDERR "ошибка: неизвестная опция: '%s'.\n", $command;
+	PrintUsage;
+	exit(1);
 }
+
+my %actions = (
+	"add"		=> \&action_add,
+	"addrep"	=> \&action_addrep,
+	"edit"		=> \&action_edit,
+	"filename"	=> \&action_filename,
+	"tags"		=> \&action_tags,
+	"test"		=> \&action_test,
+	"tofb2"		=> \&action_tofb2,
+	"tofb2-by-tags"	=> \&action_tofb2_by_tags,
+	"update"	=> \&action_update,
+	"view-all"	=> \&action_view_all,
+	"viewall"	=> \&action_view_all
+);
 
 AvgDiaryDirEnv;
 
@@ -810,64 +804,88 @@ else {
 	$file_new = abs_path($avg_diary_dir."/".$file_name);
 }
 
-my $action_tags_action;
+sub action_add {
+	FileAddEntry 0;
+}
 
-given ($action) {
-	when ([	$action_add,
-		$action_addrep ])  { FileAddEntry $action; }
-	when ($action_edit)        { FileEditEntry; }
-	when ($action_filename) {
-		printf "$file_new\n";
+sub action_addrep {
+	FileAddEntry 1;
+}
+
+sub action_edit {
+	FileEditEntry;
+}
+
+sub action_filename {
+	print "$file_new\n";
+}
+
+sub action_tags {
+	my $action_tags_action = shift @ARGV;
+	given ($action_tags_action) {
+	when (/^add$/) {
+		TagsAdd;
 	}
-	when ($action_tags) {
-		$action_tags_action = shift @ARGV;
-		given ($action_tags_action) {
-		when (/^add$/) {
-			TagsAdd;
-		}
-		when (/^list$/) {
-			TagsList;
-		}
-		when (/^$/) {
-			printf STDERR "ошибка: не указан параметр для действия 'tags'.\n";
-			PrintUsage;
-		}
-		default {
-			printf STDERR	"ошибка: указан плохой параметр ('$action_tags_action')\n".
-					"        для действия 'tags'\n";
-			PrintUsage;
-		}}
+	when (/^list$/) {
+		TagsList;
 	}
-	when ($action_test) {
-		Test;
-	}
-	when ($action_tofb2) {
-		if (scalar @ARGV != 1) {
-			printf "ошибка: нужно указать путь к fb2-книге.\n";
-			PrintUsage;
-			exit(1);
-		}
-		my $fb2_arg = shift @ARGV;
-		ToFB2Normal $fb2_arg;
-	}
-	when ($action_tofb2_by_tags) {
-		if (scalar @ARGV != 1) {
-			printf "ошибка: нужно указать путь к fb2-книге.\n";
-			PrintUsage;
-			exit(1);
-		}
-		my $fb2_arg = shift @ARGV;
-		ToFB2BT $fb2_arg;
-	}
-	when ($action_update) {
-		Update;
-	}
-	when ($action_view_all) {
-		ViewAll;
+	when (/^$/) {
+		printf STDERR "ошибка: не указан параметр для действия 'tags'.\n";
+		PrintUsage;
 	}
 	default {
-		printf STDERR "ошибка: неизвестный action: '$action'.\n";
+		printf STDERR	"ошибка: указан плохой параметр ('$action_tags_action')\n".
+				"        для действия 'tags'\n";
+		PrintUsage;
+	}}
+}
+
+sub action_test {
+	Test;
+}
+
+sub action_tofb2 {
+	if (scalar @ARGV != 1) {
+		printf "ошибка: нужно указать путь к fb2-книге.\n";
 		PrintUsage;
 		exit(1);
 	}
+	my $fb2_arg = shift @ARGV;
+	ToFB2Normal $fb2_arg;
 }
+
+sub action_tofb2_by_tags {
+	if (scalar @ARGV != 1) {
+		printf "ошибка: нужно указать путь к fb2-книге.\n";
+		PrintUsage;
+		exit(1);
+	}
+	my $fb2_arg = shift @ARGV;
+	ToFB2BT $fb2_arg;
+}
+
+sub action_update {
+	Update;
+}
+
+sub action_view_all {
+	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
+}
+
+
+my $proc = $actions{$command};
+if (not defined $proc) {
+	printf	"ошибка: нет такой команды '%s'.\n".
+		"можете запустить программу с любой из этих опций:\n",
+		$command;
+	my $sep = "";
+	for my $a (keys %actions) {
+		print $sep, $a;
+		$sep = ", ";
+	}
+	print ".\n";
+	exit(1);
+}
+
+&{$proc};
+
