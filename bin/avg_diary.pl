@@ -45,6 +45,7 @@ sub FileProcPrint;
 sub FileProcWriteToFile;
 sub GenerateFB2;
 sub GenerateFB2Dir;
+sub parse_options;
 sub TagsClean;
 sub TagsCheck;
 sub TagsExpand;
@@ -264,6 +265,32 @@ sub GenerateFB2Dir {
 		}
 	}
 	closedir $cur_dir_h;
+}
+
+sub parse_options {
+	my $opts_hash = shift;
+	my $opts_arr = shift;
+	
+	while ($#{$opts_arr} >= 0) {
+		my $cur_opt = ${$opts_arr}[0];
+		last if not ($cur_opt =~ /^-/);
+		shift @{$opts_arr};
+		my $arr1 = ${$opts_hash}{$cur_opt};
+		die "error: unknown option '$cur_opt'.\n"
+				if not defined $arr1;
+		my $ref1 = ${$arr1}[1];
+		if (ref($ref1) eq "SCALAR") {
+			die "error: '$cur_opt' require option value.\n"
+					if $#{$opts_arr} < 0;
+			${$ref1} = shift @{$opts_arr};
+		}
+		${$arr1}[0] = 2 if ${$arr1}[0] == 1;
+	}
+
+	for my $key (keys %{$opts_hash}) {
+		my $arr1 = ${$opts_hash}{$key};
+		die "error: option $key required.\n" if ${$arr1}[0] == 1;
+	}
 }
 
 sub PrintUsage {
@@ -813,7 +840,10 @@ sub action_addrep {
 }
 
 sub action_edit {
-	FileEditEntry;
+	my $date_str = "";
+	parse_options { "-d" => [ 0, \$date_str ] }, \@ARGV;
+	print "\"", $date_str, "\"\n";
+	FileEditEntry $date_str;
 }
 
 sub action_filename {
