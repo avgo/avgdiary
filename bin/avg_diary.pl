@@ -5,6 +5,11 @@
 # Anton Goncharov, 2013
 #
 
+BEGIN {
+	my $debug = 0;
+	@INC = ("./lib", @INC) if $debug == 1;
+}
+
 use 5.12.0;
 use strict;
 use Cwd qw(abs_path);
@@ -37,6 +42,7 @@ sub action_test;
 sub action_tofb2;
 sub action_tofb2_by_tags;
 sub action_update;
+sub action_view;
 sub action_view_all;
 sub CopyDirStructure($$);
 sub FileCheck;
@@ -278,13 +284,15 @@ sub parse_options {
 		my $arr1 = ${$opts_hash}{$cur_opt};
 		die "error: unknown option '$cur_opt'.\n"
 				if not defined $arr1;
+		die "error: option '$cur_opt' already set.\n"
+				if ${$arr1}[0] == 2;
 		my $ref1 = ${$arr1}[1];
 		if (ref($ref1) eq "SCALAR") {
 			die "error: '$cur_opt' require option value.\n"
 					if $#{$opts_arr} < 0;
 			${$ref1} = shift @{$opts_arr};
 		}
-		${$arr1}[0] = 2 if ${$arr1}[0] == 1;
+		${$arr1}[0] = 2;
 	}
 
 	for my $key (keys %{$opts_hash}) {
@@ -817,6 +825,7 @@ my %actions = (
 	"tofb2"		=> \&action_tofb2,
 	"tofb2-by-tags"	=> \&action_tofb2_by_tags,
 	"update"	=> \&action_update,
+	"view"		=> \&action_view,
 	"view-all"	=> \&action_view_all,
 	"viewall"	=> \&action_view_all
 );
@@ -898,12 +907,51 @@ sub action_update {
 	Update;
 }
 
+sub action_view {
+	my $tag_name = "";
+
+	parse_options { "-t" => [ 0, \$tag_name ] }, \@ARGV;
+	$tag_name =~ s/^[ \t\/]*//g;
+	$tag_name =~ s/[ \t\/]*$//g;
+
+	if ($tag_name eq "") {
+		action_view_all;
+		return ;
+	}
+	
+	my $reader = avg_diary::reader->new(
+			avg_diary_dir => $avg_diary_dir,
+			cut_time => 0,
+			cut_spaces => 0);
+	$reader->first;
+
+	my $date_last;
+
+	while (my $rec = $reader->fetch) {
+		my $tags = $rec->{tags};
+
+		next if not grep /^$tag_name(\/|$)/, @{$tags};
+
+		my $date = $rec->{date};
+		if ($date ne $date_last) {
+			printf "%s\n\n", $date;
+			$date_last = $date;
+		}
+
+		my $time = $rec->{time};
+		my $record = $rec->{record};
+
+		printf "%s", $record;
+	}
+}
+
 sub action_view_all {
 	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
 }
 
 
 my $proc = $actions{$command};
+
 if (not defined $proc) {
 	printf	"ошибка: нет такой команды '%s'.\n".
 		"можете запустить программу с любой из этих опций:\n",
