@@ -851,7 +851,6 @@ sub action_addrep {
 sub action_edit {
 	my $date_str = "";
 	parse_options { "-d" => [ 0, \$date_str ] }, \@ARGV;
-	print "\"", $date_str, "\"\n";
 	FileEditEntry $date_str;
 }
 
