@@ -925,6 +925,9 @@ sub action_view {
 	$reader->first;
 
 	my $date_last;
+	open my $fd, " | less" or die "can't open pipe. $!.\n";
+
+	printf $fd "%srecords with tag '%s'.%s\n\n", $mark_green, $tag_name, $mark_e;
 
 	while (my $rec = $reader->fetch) {
 		my $tags = $rec->{tags};
@@ -933,15 +936,17 @@ sub action_view {
 
 		my $date = $rec->{date};
 		if ($date ne $date_last) {
-			printf "%s\n\n", $date;
+			printf $fd "%s\n\n", $date;
 			$date_last = $date;
 		}
 
 		my $time = $rec->{time};
 		my $record = $rec->{record};
 
-		printf "%s", $record;
+		printf $fd "%s", $record;
 	}
+
+	close $fd;
 }
 
 sub action_view_all {
