@@ -925,7 +925,7 @@ sub action_view {
 	$reader->first;
 
 	my $date_last;
-	open my $fd, " | less" or die "can't open pipe. $!.\n";
+	open my $fd, " | less -i" or die "can't open pipe. $!.\n";
 
 	printf $fd "%srecords with tag '%s'.%s\n\n", $mark_green, $tag_name, $mark_e;
 
@@ -950,7 +950,7 @@ sub action_view {
 }
 
 sub action_view_all {
-	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less", $avg_diary_dir);
+	exec "bash", "-c", sprintf("cat \$(ls %s/day_*) | less -i", $avg_diary_dir);
 }
 
 
