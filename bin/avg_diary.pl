@@ -911,14 +911,10 @@ sub action_view {
 	my $tag_name = "";
 
 	parse_options { "-t" => [ 0, \$tag_name ] }, \@ARGV;
+
 	$tag_name =~ s/^[ \t\/]*//g;
 	$tag_name =~ s/[ \t\/]*$//g;
 
-	if ($tag_name eq "") {
-		action_view_all;
-		return ;
-	}
-	
 	my $reader = avg_diary::reader->new(
 			avg_diary_dir => $avg_diary_dir,
 			cut_time => 0,
@@ -928,12 +924,19 @@ sub action_view {
 	my $date_last;
 	open my $fd, " | less -i" or die "can't open pipe. $!.\n";
 
-	printf $fd "%srecords with tag '%s'.%s\n\n", $mark_green, $tag_name, $mark_e;
+	if ($tag_name eq "") {
+		printf $fd "%sAll records.%s\n\n", $mark_green, $mark_e;
+	}
+	else {
+		printf $fd "%sRecords with tag '%s'.%s\n\n", $mark_green, $tag_name, $mark_e;
+	}
 
 	while (my $rec = $reader->fetch) {
 		my $tags = $rec->{tags};
 
-		next if not grep /^$tag_name(\/|$)/, @{$tags};
+		if ($tag_name ne "") {
+			next if not grep /^$tag_name(\/|$)/, @{$tags};
+		}
 
 		my $date = $rec->{date};
 		if ($date ne $date_last) {
