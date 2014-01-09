@@ -13,6 +13,7 @@ BEGIN {
 use 5.12.0;
 use strict;
 use Cwd qw(abs_path);
+use File::Basename;
 use File::Spec;
 use POSIX qw(strftime);
 use List::MoreUtils qw(uniq);
@@ -936,7 +937,8 @@ sub action_view {
 
 		my $date = $rec->{date};
 		if ($date ne $date_last) {
-			printf $fd "%s\n\n", $date;
+			my $cmd = sprintf "avg-diary --file=%s edit", basename($rec->{cur_filename});
+			printf $fd "%s\n\n         %s\n\n", $date, $cmd;
 			$date_last = $date;
 		}
 

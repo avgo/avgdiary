@@ -109,7 +109,8 @@ sub fetch {
 					tags => $tags_in_record,
 					date => $cur_date,
 					time => $cur_time,
-					record => $cur_record
+					record => $cur_record,
+					cur_filename => $cur_filename
 				};
 			}
 			when (/^[0-9]{2}:[0-9]{2}/) {
@@ -126,7 +127,8 @@ sub fetch {
 					tags => $tags_in_record,
 					date => $cur_date,
 					time => $cur_time,
-					record => $cur_record
+					record => $cur_record,
+					cur_filename => $cur_filename
 				};
 			}
 			when (/^ +tags:/) {
@@ -162,7 +164,8 @@ sub fetch {
 			tags => $tags_in_record,
 			date => $cur_date,
 			time => $cur_time,
-			record => $cur_record
+			record => $cur_record,
+			cur_filename => $cur_filename
 		};
 	}
 
