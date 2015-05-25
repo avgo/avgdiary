@@ -3,6 +3,22 @@ package avg_diary::tags;
 use 5.12.0;
 use Carp;
 
+
+
+
+BEGIN {
+	use Exporter();
+	our (@EXPORT, @EXPORT_OK, @ISA);
+
+	@ISA    = qw(Exporter);
+	@EXPORT = qw(
+		&parse_line_with_tags
+		);
+};
+
+
+
+
 sub parse_line_with_tags {
 	(my $tags_h, my $line, my $comment) = @_;
 

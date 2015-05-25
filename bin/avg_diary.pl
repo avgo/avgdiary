@@ -170,7 +170,7 @@ sub FileCheck {
 		chomp $line;
 		given ($line) {
 		when (/^ *tags:/) {
-			avg_diary::tags::parse_line_with_tags \@tags_in_file, $line, "";
+			parse_line_with_tags \@tags_in_file, $line, "";
 		}}
 	}
 	TagsCheck \@tags, \@tags_in_file;
@@ -695,7 +695,7 @@ sub Update {
 					$cur_record = $line;
 				}
 				when (/^ +tags:/) {
-					avg_diary::tags::parse_line_with_tags \@tags_in_record, $line, "$file2:$line_num";
+					parse_line_with_tags \@tags_in_record, $line, "$file2:$line_num";
 					$cur_record = $cur_record.$line;
 				}
 				default {

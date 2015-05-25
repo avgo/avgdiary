@@ -6,9 +6,15 @@ use Cwd qw(abs_path);
 
 use avg_diary::tags;
 
+
+
+
 my $state_init = 1;
 my $state_date = 2;
 my $state_rec = 3;
+
+
+
 
 sub new {
 	my ($class, %cnf) = @_;
@@ -132,7 +138,7 @@ sub fetch {
 				};
 			}
 			when (/^ +tags:/) {
-				avg_diary::tags::parse_line_with_tags $tags_in_record, $line,
+				parse_line_with_tags $tags_in_record, $line,
 						sprintf ("%s:%u", $cur_filename, $line_num);
 				$line =~ s/^ *// if ($cut_spaces);
 				$cur_record = $cur_record.$line;
