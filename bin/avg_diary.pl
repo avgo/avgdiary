@@ -35,7 +35,6 @@ my $mark_e = "\033[0m";
 my $tags_dir;
 
 sub action_add;
-sub action_addrep;
 sub action_edit;
 sub action_filename;
 sub action_tags;
@@ -111,8 +110,6 @@ sub CopyDirStructure($$) {
 }
 
 sub FileAddEntry {
-	my $prefix = shift;
-	my $prefix2 = "";
 	my $is_file_new;
 	
 	$is_file_new = (-f $file_new) ? 0 : 1;
@@ -124,14 +121,8 @@ sub FileAddEntry {
 		printf DIARY "$date_hdr\n\n";
 	}
 	
-	given ($prefix) {
-		when (1) {
-			$prefix2 = "[ОТЧЁТ]    ";
-		}
-	}
-	
 	my $hour_min = strftime("%H:%M", localtime);
-	printf DIARY "$hour_min    $prefix2\n\n";
+	printf DIARY "$hour_min    \n\n";
 	close DIARY;
 	
 	system("vim -c 'set expandtab' -c 'normal GkA' $file_new");
@@ -307,7 +298,6 @@ sub PrintUsage {
 	my $AppNameStr = " " x length $AppName;
 	printf	"ДЕЛАЙ ТАК:\n".
 		"    $AppName add          Добавить запись в дневник. Или завести новый.\n".
-		"    $AppName addrep       Добавить запись-отчёт в дневник. Или завести новый.\n".
 		"    $AppName edit         Редактировать сегодняшнюю запись.\n".
 		"    $AppName help         Вывести справку.\n".
 		"    $AppName tags list    Вывести список доступных тегов.\n".
@@ -818,7 +808,6 @@ if ($command =~ /^-/) {
 
 my %actions = (
 	"add"		=> \&action_add,
-	"addrep"	=> \&action_addrep,
 	"edit"		=> \&action_edit,
 	"filename"	=> \&action_filename,
 	"tags"		=> \&action_tags,
@@ -842,17 +831,11 @@ else {
 }
 
 sub action_add {
-	FileAddEntry 0;
-}
-
-sub action_addrep {
-	FileAddEntry 1;
+	FileAddEntry;
 }
 
 sub action_edit {
-	my $date_str = "";
-	parse_options { "-d" => [ 0, \$date_str ] }, \@ARGV;
-	FileEditEntry $date_str;
+	FileEditEntry;
 }
 
 sub action_filename {
