@@ -47,7 +47,6 @@ sub action_view;
 sub action_view_all;
 sub CopyDirStructure($$);
 sub FileCheck;
-sub FileNewLoadTags;
 sub FileProcPrint;
 sub FileProcWriteToFile;
 sub GenerateFB2;
@@ -154,7 +153,7 @@ sub FileCheck {
 	my @tags_in_file;
 
 	CheckCreateTagsPath;
-	FileNewLoadTags \@tags, $tags_dir;
+	tags_load_from_file \@tags, $tags_dir;
 	open DAY1, "<", $file_new or die "$!";
 	while (my $line = <DAY1>) {
 		chomp $line;
@@ -164,27 +163,6 @@ sub FileCheck {
 		}}
 	}
 	tags_check \@tags, \@tags_in_file;
-}
-
-sub FileNewLoadTags {
-	my $tags = shift;
-	my $cur_tags_dir = shift;
-	my $tags_dir_h;
-	my $cur_dir;
-
-
-	opendir $tags_dir_h, $cur_tags_dir or die "Не получается открыть каталог '$cur_tags_dir'. $!\n";
-	while ($cur_dir = readdir $tags_dir_h) {
-		if ($cur_dir ne "." && $cur_dir ne "..") {
-			my $cur_dir2 = abs_path("$cur_tags_dir/$cur_dir");
-			if (-d $cur_dir2) {
-				$cur_dir2 =~ /$tags_dir\/*(.*)/;
-				push @{$tags}, $1;
-				FileNewLoadTags $tags, "$cur_dir2";
-			}
-		}
-	}
-	closedir $tags_dir_h;
 }
 
 sub FileProcPrint {
@@ -365,8 +343,7 @@ sub TagsList {
 	my @tags_in_file;
 
 	CheckCreateTagsPath;
-	FileNewLoadTags \@tags, $tags_dir;
-	@tags = sort @tags;
+	tags_load_from_file \@tags, $tags_dir;
 	for my $ct (@tags) {
 		printf "$ct\n";
 	}
@@ -535,7 +512,7 @@ sub Update {
 
 	CheckCreateTagsPath;
 	TagsClean $tags_dir;
-	FileNewLoadTags \@tags, $tags_dir;
+	tags_load_from_file \@tags, $tags_dir;
 	opendir $diary_dir_h, $avg_diary_dir or die "Не получается открыть каталог '$avg_diary_dir'. $!.\n";
 	while ($cur_file = readdir $diary_dir_h) {
 		if ($cur_file =~ /^day_/) {
