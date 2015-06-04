@@ -13,6 +13,7 @@ BEGIN {
 	@ISA    = qw(Exporter);
 	@EXPORT = qw(
 		&parse_line_with_tags
+		&tags_check
 		);
 };
 
@@ -36,6 +37,25 @@ sub parse_line_with_tags {
 			push @{$tags_h}, $1;
 		}
 	}
+}
+
+sub tags_check {
+	(my $tags, my $tags_in_file) = @_;
+	my $result = 1;
+
+	for my $ct1 (@{$tags_in_file}) {
+		my $finded = 0;
+		for my $ct2 (@{$tags}) {
+			if ($ct1 eq $ct2) {
+				$finded = 1
+			}
+		}
+		if ($finded == 0) {
+			$result = 0;
+			printf "предупреждение: тег '$ct1' не определён в множестве тегов.\n";
+		}
+	}
+	return $result;
 }
 
 1;

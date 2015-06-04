@@ -53,7 +53,6 @@ sub GenerateFB2;
 sub GenerateFB2Dir;
 sub parse_options;
 sub TagsClean;
-sub TagsCheck;
 sub TagsExpand;
 sub Test;
 sub ToFB2BT;
@@ -164,7 +163,7 @@ sub FileCheck {
 			parse_line_with_tags \@tags_in_file, $line, "";
 		}}
 	}
-	TagsCheck \@tags, \@tags_in_file;
+	tags_check \@tags, \@tags_in_file;
 }
 
 sub FileNewLoadTags {
@@ -338,25 +337,6 @@ sub TagsClean {
 		}
 	}
 	closedir $tags_dir_h;
-}
-
-sub TagsCheck {
-	(my $tags, my $tags_in_file) = @_;
-	my $result = 1;
-
-	for my $ct1 (@{$tags_in_file}) {
-		my $finded = 0;
-		for my $ct2 (@{$tags}) {
-			if ($ct1 eq $ct2) {
-				$finded = 1
-			}
-		}
-		if ($finded == 0) {
-			$result = 0;
-			printf "предупреждение: тег '$ct1' не определён в множестве тегов.\n";
-		}
-	}
-	return $result;
 }
 
 sub TagsExpand {
@@ -744,7 +724,7 @@ sub UpdateSaveToFiles {
 		exit(1);
 	}
 
-	if (!TagsCheck $tags, $tags_in_record) {
+	if (!tags_check $tags, $tags_in_record) {
 		chomp $cur_date;
 		printf "exit. date: %s\n", $cur_date;
 		exit(1);
