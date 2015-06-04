@@ -18,6 +18,7 @@ use File::Spec;
 use POSIX qw(strftime);
 use List::MoreUtils qw(uniq);
 
+use avg_diary::fb2::normal;
 use avg_diary::reader;
 use avg_diary::tags;
 
@@ -56,7 +57,6 @@ sub TagsClean;
 sub TagsExpand;
 sub Test;
 sub ToFB2BT;
-sub ToFB2Normal;
 sub ToFB2BTWriteRecords;
 sub ToFB2BTWriteRecordToFile($$$$);
 sub Update;
@@ -527,60 +527,6 @@ sub ToFB2BTWriteRecordToFile($$$$) {
 	close $fd;
 }
 
-sub ToFB2Normal {
-	my $filename = shift;
-	
-	my $reader = avg_diary::reader->new(
-			avg_diary_dir => $avg_diary_dir,
-			cut_time => 1,
-			cut_spaces => 1);
-	$reader->first;
-	open my $fd, ">", $filename or
-			die "ошибка: не получается создать файл '$filename'. $!.\n";
-	printf $fd
-		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
-		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
-		"<body>\n";
-	my $date_last;
-	while (my $rec = $reader->fetch) {
-		my $date = $rec->{date};
-		if ($date ne $date_last) {
-			printf	$fd
-				"</section>\n" if $date_last ne "";
-			printf	$fd
-				"<section>\n".
-				"<title>\n".
-				"  <p>%s</p>\n".
-				"</title>\n", $date;
-			$date_last = $date;
-		}
-
-		my $time = $rec->{time};
-		my $record = $rec->{record};
-		$record =~ s/&/&amp;/g;
-		$record =~ s/</&lt;/g;
-		$record =~ s/>/&gt;/g;
-		$record =~ s/$/<\/v>/mg;
-		$record =~ s/^/  <v>/mg;
-
-		printf $fd
-			"<p>\n".
-			"  <strong>%s</strong>\n".
-			"</p>\n".
-			"<poem>\n".
-			"<stanza>\n".
-			"%s\n".
-			"</stanza>\n".
-			"</poem>\n",
-			$time, $record;
-	}
-	printf $fd
-		"</section>\n".
-		"</body>\n".
-		"</FictionBook>\n";
-	close $fd;
-}
-
 sub Update {
 	my @tags;
 	my $diary_dir_h;
@@ -853,7 +799,7 @@ sub action_tofb2 {
 		exit(1);
 	}
 	my $fb2_arg = shift @ARGV;
-	ToFB2Normal $fb2_arg;
+	fb2_normal $avg_diary_dir, $fb2_arg;
 }
 
 sub action_tofb2_by_tags {
