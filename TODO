@@ -1,0 +1,67 @@
+08.06.2015, Пн.
+
+10:06    avgdiary:
+
+1.  Добавление к записи тегов: avg-diary add -t tasks.
+
+2.  Добавление записей в произвольное место в дневнике:
+
+      | $ avg-diary add 2007-10-01 10:30
+
+3.  А вот так вот можно добавлять пустые записи:
+
+      | $ avg-diary add 2007-10-01 10:30 --nt    # no timestamp
+      | $ avg-diary add 2007-10-1 10:30 --nt    # no timestamp
+      | $ avg-diary add 01.10.2007 10:30 --nt    # no timestamp
+      | $ avg-diary add 1.10.2007 10:30 --nt    # no timestamp
+
+4.  После модификации можно сохранять старый вариант дня и после выполнения команды
+    add/edit выводить патч.
+
+5.  Быстро проставить время включения.
+
+      | $ avg-diary started
+      | $ avg-diary uptime
+      | $ avg-diary uptime-s
+
+6.  Поддержка добавления и удаления тегов.
+
+      | $ avg-diary tags add -pv tasks/otium events/ok events/nothing
+      | $ avg-diary tags del -pv tasks/otium events/ok events/nothing
+      | $ avg-diary tags delete -v tasks/otium events/ok events/nothing
+      | $ avg-diary tags delete -r old_data
+
+7.  Поддержка bash completion для avg-diary.
+
+8.  Рефакторинг парсинга опций.
+
+9.  Цитирование файла:
+
+      | $ avg-diary cite /tmp/program.c:834-870
+
+    (добавить цитату в существующую последнюю запись)
+
+      | $ avg-diary cite 834-870:/tmp/program.c
+      | $ avg-diary edit-cite-add 834-870:/tmp/program.c
+      | $ avg-diary edit-cite-edit 834-870:/tmp/program.c
+
+10. Добавление тегов при добавлении и редактировании записи.
+
+      | $ avg-diary add -f
+
+    Ключ -f здесь будет означать добавить очередной тег,
+    если такого тега не существует.
+
+11. Планинг.
+
+    Да, это уже давно было нужно. Нужно будет чтобы была
+    возможность добавления событий в будущем для дальнейшего
+    их просмотра и напоминания о этих событий.
+
+12. Восход и заход солнца.
+
+    Это интересные данные. Наверное, нужно как-нибудь встроить
+    их в avg-diary.
+
+    tags: [tasks]
+
