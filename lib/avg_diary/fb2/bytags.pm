@@ -2,6 +2,7 @@ package avg_diary::fb2::bytags;
 
 use strict;
 use avg_diary::reader;
+use Cwd qw(abs_path);
 
 
 
@@ -12,22 +13,46 @@ BEGIN {
 
 	@ISA    = qw(Exporter);
 	@EXPORT = qw(
-		&fb2_normal
+		&fb2_by_tags
 		);
 };
 
 
 
 
+sub CopyDirStructure($$) {
+	(my $src, my $dst) = @_;
+
+	opendir my $src_h, $src or die sprintf("ошибка: не получается открыть исходный каталог '%s'.\n", $src);
+
+	while (my $src2 = readdir $src_h) {
+		next if ($src2 eq ".") or ($src2 eq "..");
+		my $src3 = abs_path($src."/".$src2);
+		next if not -d $src3;
+		my $dst3 = abs_path($dst."/".$src2);
+		mkdir $dst3 or die sprintf(
+				"ошибка: не получается создать каталог назначения '%s'.\n",
+				$dst3);
+		CopyDirStructure($src3, $dst3);
+	}
+
+	closedir $src_h;
+}
+
 sub fb2_by_tags {
-	my $fb2_filename = shift;
+	(my $avg_diary_dir, my $fb2_filename) = @_;
 
 	my $tmp_dir = "/tmp/diary-fb2.tmp";
 	system "rm -rf $tmp_dir";
 	mkdir $tmp_dir or die sprintf(
 			"ошибка: не получается создать каталог '%s'. %s.\n",
 			$tmp_dir, $!);
-	CheckCreateTagsPath $tags_dir;
+
+	my $tags_dir = $avg_diary_dir . "/tags";
+
+	if (! -d $tags_dir) {
+		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
+	}
 	CopyDirStructure $tags_dir, $tmp_dir;
 	
 	my $reader = avg_diary::reader->new(
@@ -44,20 +69,20 @@ sub fb2_by_tags {
 			for my $cur_tag (@{$tags}) {
 				my $filename = abs_path(
 						$tmp_dir."/".$cur_tag."/".$day_filename);
-				fb2_by_tags_write_record_to_file
+				fb2_by_tags_write_record_to_file(
 						$filename,
 						$rec->{date},
 						$rec->{time},
-						$rec->{record};
+						$rec->{record});
 			}
 		}
 		else {
 			my $filename = abs_path($tmp_dir."/".$day_filename);
-			fb2_by_tags_write_record_to_file
+			fb2_by_tags_write_record_to_file(
 					$filename,
 					$rec->{date},
 					$rec->{time},
-					$rec->{record};
+					$rec->{record});
 		}
 	}
 
@@ -68,7 +93,7 @@ sub fb2_by_tags {
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n".
 		"<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\" xmlns:l=\"http://www.w3.org/1999/xlink\">\n".
 		"<body>\n";
-	fb2_by_tags_write_records $fb2_file, $tmp_dir, "";
+	fb2_by_tags_write_records($fb2_file, $tmp_dir, "");
 	printf $fb2_file
 		"</body>\n".
 		"</FictionBook>\n";
@@ -100,7 +125,7 @@ sub fb2_by_tags_write_records {
 	for my $cur_dir (sort @dirs) {
 		my $cur_dir2 = abs_path($dir."/".$cur_dir);
 		my $cur_tag = ($tag eq "") ? $cur_dir : $tag."/".$cur_dir;
-		fb2_by_tags_write_records $fb2_file, $cur_dir2, $cur_tag;
+		fb2_by_tags_write_records($fb2_file, $cur_dir2, $cur_tag);
 	}
 
 	my $tag_text;

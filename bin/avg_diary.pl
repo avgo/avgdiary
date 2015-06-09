@@ -44,7 +44,6 @@ sub action_tofb2;
 sub action_tofb2_by_tags;
 sub action_view;
 sub action_view_all;
-sub CopyDirStructure($$);
 sub FileCheck;
 sub parse_options;
 
@@ -72,25 +71,6 @@ sub CheckCreateTagsPath {
 	if (! -d $tags_dir) {
 		mkdir "$tags_dir" or die "Не получается создать каталог '$tags_dir'. $!\n";
 	}
-}
-
-sub CopyDirStructure($$) {
-	(my $src, my $dst) = @_;
-
-	opendir my $src_h, $src or die sprintf("ошибка: не получается открыть исходный каталог '%s'.\n", $src);
-
-	while (my $src2 = readdir $src_h) {
-		next if ($src2 eq ".") or ($src2 eq "..");
-		my $src3 = abs_path($src."/".$src2);
-		next if not -d $src3;
-		my $dst3 = abs_path($dst."/".$src2);
-		mkdir $dst3 or die sprintf(
-				"ошибка: не получается создать каталог назначения '%s'.\n",
-				$dst3);
-		CopyDirStructure $src3, $dst3;
-	}
-
-	closedir $src_h;
 }
 
 sub FileAddEntry {
@@ -326,7 +306,7 @@ sub action_tofb2_by_tags {
 		exit(1);
 	}
 	my $fb2_arg = shift @ARGV;
-	fb2_by_tags $fb2_arg;
+	fb2_by_tags $avg_diary_dir, $fb2_arg;
 }
 
 sub action_view {
