@@ -74,6 +74,11 @@ sub CheckCreateTagsPath {
 }
 
 sub FileAddEntry {
+	(my %cnf) = @_;
+
+	my $uptime = delete $cnf{uptime};
+	$uptime = 0 unless defined $uptime;
+
 	my $is_file_new;
 	
 	$is_file_new = (-f $file_new) ? 0 : 1;
@@ -85,7 +90,17 @@ sub FileAddEntry {
 		printf DIARY "$date_hdr\n\n";
 	}
 	
-	my $hour_min = strftime("%H:%M", localtime);
+	my $hour_min;
+
+	if ($uptime == 0) {
+		$hour_min = strftime("%H:%M", localtime);
+	}
+	else {
+		$hour_min = `uptime -s`;
+		$hour_min =~ /0*([0-9]+)-0*([0-9]+)-0*([0-9]+) *0*([0-9]+):0*([0-9]+):0*([0-9]+)/;
+		$hour_min = sprintf "%02d:%02d", $4, $5;
+	}
+
 	printf DIARY "$hour_min    \n\n";
 	close DIARY;
 	
@@ -258,7 +273,20 @@ else {
 }
 
 sub action_add {
-	FileAddEntry;
+	my $arg = shift @ARGV;
+	my %cnf;
+
+	if (defined $arg) {
+		if ($arg eq "--uptime") {
+			$cnf{uptime} = 1;
+		}
+		else {
+			print "error: unknown for 'add' option '$arg'.\n";
+			exit(1);
+		}
+	}
+
+	FileAddEntry %cnf;
 }
 
 sub action_edit {
