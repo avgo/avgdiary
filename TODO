@@ -15,12 +15,24 @@
 4.  После модификации можно сохранять старый вариант дня и после выполнения команды
     add/edit выводить патч.
 
-6.  Поддержка добавления и удаления тегов.
+6.  Tags.
 
-      | $ avg-diary tags add -pv tasks/otium events/ok events/nothing
-      | $ avg-diary tags del -pv tasks/otium events/ok events/nothing
-      | $ avg-diary tags delete -v tasks/otium events/ok events/nothing
-      | $ avg-diary tags delete -r old_data
+    6.1. Добавление/удаление.
+
+           | $ avg-diary tags add -pv tasks/otium events/ok events/nothing
+           | $ avg-diary tags del -pv tasks/otium events/ok events/nothing
+           | $ avg-diary tags delete -v tasks/otium events/ok events/nothing
+           | $ avg-diary tags delete -r old_data
+
+    6.2. Переименование тега.
+
+         Нужно чтобы была возможность переименовать тег в множестве тегов, а также
+         заменить в записях старое имя тега на новое имя.
+
+    6.3. Рефакторинг подсистемы тегов.
+
+         Сейчас теги реализованы в виде папок в каталоге дневника.
+         Насколько это правильно?
 
 7.  Поддержка bash completion для avg-diary.
 
@@ -53,4 +65,6 @@
 
     Это интересные данные. Наверное, нужно как-нибудь встроить
     их в avg-diary.
+
+vim: set expandtab ts=4 :
 
