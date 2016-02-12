@@ -15,12 +15,6 @@
 4.  После модификации можно сохранять старый вариант дня и после выполнения команды
     add/edit выводить патч.
 
-5.  Быстро проставить время включения.
-
-      | $ avg-diary started
-      | $ avg-diary uptime
-      | $ avg-diary uptime-s
-
 6.  Поддержка добавления и удаления тегов.
 
       | $ avg-diary tags add -pv tasks/otium events/ok events/nothing
