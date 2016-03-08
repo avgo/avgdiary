@@ -41,7 +41,7 @@ sub test2 {
 	my $args = [ $arr, 0 ];
 
 	$af->read (sub {
-		(my $date, my $rec, my $args) = @_;
+		(my $date, my $time, my $rec, my $args) = @_;
 
 		# !!! date is not checking !!!
 
@@ -49,21 +49,47 @@ sub test2 {
 		my $index = \${$args}[1];
 
 		my $arr_date = ${$arr}[0];
-		my $arr_rec = ${$arr}[1];
+		my $arr_t_rec = ${$arr}[1];
 
 		my $cur_test_index = ${$index};
 
-		printf "checking %d/%d .. ",
+		printf "  checking %d/%d  .. ",
 				$cur_test_index + 1,
-				scalar @{$arr_rec};
+				scalar @{$arr_t_rec};
 
-		my $cur_rec = ${$arr_rec}[$cur_test_index];
+		if ($cur_test_index >= scalar @{$arr_t_rec})
+		{
+			print	"fail\n" .
+				"\n" .
+				"error: out of range! (day-file has more records\n" .
+				"       than records in array.)\n" .
+				"\n";
 
-		die	"fail\n" .
-			$rec     . "\n" .
-			$cur_rec . "\n" .
-			"\n"
-			if $rec ne $cur_rec;
+			exit 1;
+		}
+
+		my $cur_t_rec = ${$arr_t_rec}[$cur_test_index];
+
+		my $cur_t = ${$cur_t_rec}[0];
+		my $cur_rec = ${$cur_t_rec}[1];
+
+		if ($rec ne $cur_rec)
+		{
+			print	"fail\n" .
+				$rec     . "\n" .
+				$cur_rec . "\n" .
+				"\n";
+			exit 1;
+		}
+
+		if ($time ne $cur_t)
+		{
+			print	"fail\n" .
+				"TIME GET: " . $time    . "\n" .
+				"TIME EXP: " . $cur_t   . "\n" .
+				"\n";
+			exit 1;
+		}
 
 		print "ok\n";
 
@@ -76,11 +102,11 @@ sub test2 {
 
 	if (${$args}[1] == scalar @{${$arr}[1]})
 	{
-		printf "ok\n";
+		printf "ok\n\n";
 	}
 	else
 	{
-		printf "fail\n";
+		printf "fail\n\n";
 	}
 }
 
@@ -88,16 +114,28 @@ sub test3 {
 	my @arr = ( [
 		"01.02.2011",
 		[
-			"10:00    2011_02_01_10_00_r1_l1\n" .
-			"         2011_02_01_10_00_r1_l2\n" .
-			"\n",
-			"11:12    2011_02_01_11_12_r2_l1\n" .
-			"         2011_02_01_11_12_r2_l2\n" .
-			"\n",
+			[	"10:00",
+				"10:00    2011_02_01_10_00_r1_l1\n" .
+				"         2011_02_01_10_00_r1_l2\n" .
+				"\n",
+			],
+			[	"11:12",
+				"11:12    2011_02_01_11_12_r2_l1\n" .
+				"         2011_02_01_11_12_r2_l2\n" .
+				"\n",
+			],
 		],
 	], [
 		"03.02.2011",
 		[ ],
+	], [
+		"04.02.2011",
+		[
+			[	"12:12",
+				"12:12    2011_02_04_12_12_r1_l1\n" .
+				"\n",
+			],
+		],
 	] );
 
 	for my $x (@arr)
@@ -105,7 +143,5 @@ sub test3 {
 		test2 $x;
 	}
 }
-
-# test2 "01.02.2011";
 
 test3;

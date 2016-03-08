@@ -57,7 +57,7 @@ sub read {
 	my $state = STATE_DATE;
 	my $dayfile_rp = $self->{avg_diary_dir} . "/" . $self->{filename};
 
-	my $cur_date; my $cur_record;
+	my $cur_date; my $cur_time; my $cur_record;
 	my $lineno = 1;
 
 	open my $fd, "<", $dayfile_rp or die
@@ -67,14 +67,16 @@ sub read {
 	{
 		if ($state == STATE_REC_02)
 		{
-			if (/^[0-9]{2}:[0-9]{2} /)
+			if (/^([0-9]{2}:[0-9]{2}) /)
 			{
 				&{$proc} (
 					$cur_date,
+					$cur_time,
 					$cur_record,
 					$args,
 				);
 
+				$cur_time = $1;
 				$cur_record = $_;
 			}
 			elsif (/^ / or /^$/)
@@ -89,8 +91,9 @@ sub read {
 		}
 		elsif ($state == STATE_REC_01)
 		{
-			if (/^[0-9]{2}:[0-9]{2} /)
+			if (/^([0-9]{2}:[0-9]{2}) /)
 			{
+				$cur_time = $1;
 				$cur_record = $_;
 				$state = STATE_REC_02
 			}
@@ -120,6 +123,7 @@ sub read {
 	{
 		&{$proc} (
 			$cur_date,
+			$cur_time,
 			$cur_record,
 			$args,
 		);
