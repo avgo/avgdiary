@@ -21,7 +21,7 @@ use List::MoreUtils qw(uniq);
 use avg_diary::fb2::bytags;
 use avg_diary::fb2::normal;
 use avg_diary::reader;
-use avg_diary::tags;
+use avg_diary::tags::utils;
 
 
 

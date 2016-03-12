@@ -59,6 +59,7 @@ sub read {
 
 	my $cur_date; my $cur_time; my $cur_record;
 	my $lineno = 1;
+	my $tags = [ ];
 
 	open my $fd, "<", $dayfile_rp or die
 			"error: '$dayfile_rp'. $!.\n";
@@ -73,14 +74,17 @@ sub read {
 					$cur_date,
 					$cur_time,
 					$cur_record,
+					$tags,
 					$args,
 				);
 
 				$cur_time = $1;
 				$cur_record = $_;
+				$tags = [ ];
 			}
 			elsif (/^ / or /^$/)
 			{
+				line_tags ($tags, $_, "!") if /^ *tags:/;
 				$cur_record .= $_;
 			}
 			else
@@ -125,8 +129,30 @@ sub read {
 			$cur_date,
 			$cur_time,
 			$cur_record,
+			$tags,
 			$args,
 		);
+	}
+}
+
+sub line_tags {
+	(my $tags_h, my $line, my $comment) = @_;
+
+	chomp $line;
+
+	$line =~ s/^ *tags: *//g;
+
+	while ($line ne "") {
+		if ( ! ($line =~ s/^\[([^\]]*)\][, ]*//)) {
+			printf "%s:некорректное определение тега: |%s|%s|\n", $comment, $1, $line;
+			$line = "";
+		}
+		elsif ($1 eq "") {
+			printf "пустой тег\n";
+		}
+		else {
+			push @{$tags_h}, $1;
+		}
 	}
 }
 

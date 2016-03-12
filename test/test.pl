@@ -41,7 +41,7 @@ sub test2 {
 	my $args = [ $arr, 0 ];
 
 	$af->read (sub {
-		(my $date, my $time, my $rec, my $args) = @_;
+		(my $date, my $time, my $rec, my $tags, my $args) = @_;
 
 		# !!! date is not checking !!!
 
@@ -91,6 +91,27 @@ sub test2 {
 			exit 1;
 		}
 
+		my $cur_tags = ${$cur_t_rec}[2];
+
+		if ($#{$tags} != $#{$cur_tags})
+		{
+			print	"fail\n" .
+				"tags != tags\n" .
+				"\n";
+			exit 1;
+		}
+
+		for (my $i = 0; $i <= $#{$tags}; ++$i)
+		{
+			if (${$tags}[$i] ne ${$cur_tags}[$i])
+			{
+				print	"fail\n";
+				printf	"tags[%d] = '%s'  !=  tags[%d] = '%s'\n",
+					$i, ${$tags}[$i], $i, ${$cur_tags}[$i];
+				exit 1;
+			}
+		}
+
 		print "ok\n";
 
 		++${$index};
@@ -118,11 +139,13 @@ sub test3 {
 				"10:00    2011_02_01_10_00_r1_l1\n" .
 				"         2011_02_01_10_00_r1_l2\n" .
 				"\n",
+				[ ],
 			],
 			[	"11:12",
 				"11:12    2011_02_01_11_12_r2_l1\n" .
 				"         2011_02_01_11_12_r2_l2\n" .
 				"\n",
+				[ ],
 			],
 		],
 	], [
@@ -134,6 +157,27 @@ sub test3 {
 			[	"12:12",
 				"12:12    2011_02_04_12_12_r1_l1\n" .
 				"\n",
+				[ ],
+			],
+		],
+	], [
+		"05.02.2011",
+		[
+			[	"10:00",
+				"10:00    2011_02_05_10_00_r1_l1\n" .
+				"         2011_02_05_10_00_r1_l2\n" .
+				"\n" .
+				"         tags: [t1]\n" .
+				"\n",
+				[ "t1" ],
+			],
+			[	"11:12",
+				"11:12    2011_02_05_11_12_r2_l1\n" .
+				"         2011_02_05_11_12_r2_l2\n" .
+				"\n" .
+				"         tags: [t2], [t3]\n" .
+				"\n",
+				[ "t2", "t3" ],
 			],
 		],
 	] );

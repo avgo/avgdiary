@@ -4,7 +4,7 @@ use 5.12.0;
 use Carp;
 use Cwd qw(abs_path);
 
-use avg_diary::tags;
+use avg_diary::tags::utils;
 
 
 
