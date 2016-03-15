@@ -8,6 +8,7 @@ BEGIN {
 use strict;
 
 use avg_diary::file;
+use avg_diary::tags::dirtags;
 
 my $test_dir = "test";
 my $avg_diary_dir = $test_dir;
@@ -188,4 +189,83 @@ sub test3 {
 	}
 }
 
+sub test4 {
+	my $tags_dir = $test_dir . "/tags";
+
+	if (! -d $tags_dir) {
+		mkdir $tags_dir or die "error: mkdir ($tags_dir): $!\n";
+	}
+
+	my @ttc = (
+		"t1",
+		"t2",
+		"t2/t21",
+		"t3",
+		"t3/t31",
+		"t3/t32",
+	);
+
+	for my $cd (@ttc)
+	{
+		my $cd1 = $tags_dir . "/" . $cd;
+
+		if (! -d $cd1) {
+			print "creating dir '$cd'.\n";
+			mkdir $cd1 or die "tags_dir: mkdir ($tags_dir, $cd): $!\n";
+		}
+	}
+
+	my $tags = new avg_diary::tags::dirtags;
+
+	$tags->read_tags_from_dir ($test_dir . "/tags");
+
+	printf "checking tags arr ... ";
+
+	if ($#ttc != $#{$tags->{tags}})
+	{
+		print	"fail\n" .
+			"tags != tags\n" .
+			"\n";
+		exit 1;
+	}
+
+	for (my $tag_idx = 0; $tag_idx <= $#{$tags->{tags}}; ++$tag_idx)
+	{
+		if ($ttc[$tag_idx] ne ${$tags->{tags}}[$tag_idx])
+		{
+			print	"fail\n" .
+			printf	"tags[%d] = '%s'  !=  tags[%d] = '%s'\n",
+				$tag_idx, $ttc[$tag_idx],
+				$tag_idx, ${$tags->{tags}}[$tag_idx];
+			exit 1;
+		}
+	}
+
+	print "ok.\n";
+	print "checking tags hash ...\n";
+
+	for my $tag (@ttc)
+	{
+		printf	"try to accessing tag %-9s ... ", "'$tag'";
+
+		if ($tags->tag_ex($tag))
+		{
+			print "ok\n";
+		}
+		else
+		{
+			print "fail.\n";
+			exit 1;
+		}
+	}
+
+	print "try to accessing tag 't2/t211' ... ";
+	if (!$tags->tag_ex("t2/t211"))
+		{ print "ok\n"; }
+	else	{ print "fail\n"; exit 1; }
+
+	print "checking tags hash ... ok\n";
+}
+
 test3;
+test4;
