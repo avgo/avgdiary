@@ -2,7 +2,7 @@
 
 #
 # avg-diary - program for text diaries with tags.
-# Anton Goncharov, 2013-2015
+# Anton Goncharov, 2013 - 2016.
 #
 
 BEGIN {
@@ -17,8 +17,6 @@ use Cwd qw(abs_path);
 
 
 
-my $avg_diary_dir;
-
 my $mark_red = "\033[31m";
 my $mark_green = "\033[32m";
 my $mark_e = "\033[0m";
@@ -26,20 +24,20 @@ my $mark_e = "\033[0m";
 
 
 
-sub AvgDiaryDirEnv {
-	$avg_diary_dir = $ENV{avg_diary_dir};
+sub avg_diary_dir_env {
+	my $avg_diary_dir = $ENV{avg_diary_dir};
 
 	die	"ошибка: не указан путь к дневнику.\n".
 		"Укажите правильный путь к дневнику в вашей оболочке\n".
 		"export avg_diary_dir=<dir>\n"
-		if $avg_diary_dir eq "";
+		if not defined $avg_diary_dir;
 
 	die	"ошибка: '$avg_diary_dir' не является каталогом.\n".
 		"Укажите правильный путь к дневнику в вашей оболочке\n".
 		"export avg_diary_dir=<dir>\n"
 		if not -d $avg_diary_dir;
 
-	$avg_diary_dir = abs_path $avg_diary_dir;
+	return abs_path $avg_diary_dir;
 }
 
 sub print_usage {
