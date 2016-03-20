@@ -5,42 +5,14 @@ use strict;
 sub new {
 	(my $class, my %cnf) = @_;
 
-	my $avg_diary_dir  = delete $cnf{avg_diary_dir};
-
-	die "avg_diary_dir is required.\n" if not defined $avg_diary_dir;
-
-	die "avg_diary_dir path '$avg_diary_dir' is not valid directory.\n"
-		if not defined $avg_diary_dir;
-
-	my $date           = delete $cnf{date};
 	my $filename       = delete $cnf{filename};
 
-	my $day; my $month; my $year;
+	die "avg_diary::file error: filename parameter needed.\n"
+			if not defined $filename;
 
-	if ($date =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
-	{
-		($day,$month,$year) = ( $1, $2, $3 );
-		$filename = sprintf "day_%04u_%02u_%02u",
-				$year, $month, $day;
-	}
-	elsif ($filename =~ /^day_([0-9]+)_([0-9]+)_([0-9]+)$/)
-	{
-		($day,$month,$year) = ( $3, $2, $1 );
-	}
-	else
-	{
-		die "error: 1.\n";
-	}
-
-	my $self = bless
-		{
-			avg_diary_dir  => $avg_diary_dir,
-			day            => $day,
-			month          => $month,
-			year           => $year,
-			filename       => $filename,
-		},
-		$class;
+	my $self = bless {
+		filename => $filename,
+	}, $class;
 
 	return $self;
 }
@@ -55,14 +27,13 @@ sub read {
 	(my $self, my $proc, my $args) = @_;
 
 	my $state = STATE_DATE;
-	my $dayfile_rp = $self->{avg_diary_dir} . "/" . $self->{filename};
 
 	my $cur_date; my $cur_time; my $cur_record;
-	my $lineno = 1;
+	my $lineno = 1; my $rec_line;
 	my $tags = [ ];
 
-	open my $fd, "<", $dayfile_rp or die
-			"error: '$dayfile_rp'. $!.\n";
+	open my $fd, "<", $self->{filename} or die
+			"avg_diary::file error: can't open file '$self->{filename}'. $!.\n";
 
 	while (<$fd>)
 	{
@@ -75,12 +46,15 @@ sub read {
 					$cur_time,
 					$cur_record,
 					$tags,
+					$rec_line,
+					$lineno,
 					$args,
 				);
 
 				$cur_time = $1;
 				$cur_record = $_;
 				$tags = [ ];
+				$rec_line = $lineno;
 			}
 			elsif (/^ / or /^$/)
 			{
@@ -89,7 +63,7 @@ sub read {
 			}
 			else
 			{
-				die "syntax error 2 at $lineno\n" .
+				die "avg_diary::file error: syntax error 2 at $lineno\n" .
 					$_ . "\n";
 			}
 		}
@@ -99,6 +73,8 @@ sub read {
 			{
 				$cur_time = $1;
 				$cur_record = $_;
+				$rec_line = $lineno;
+
 				$state = STATE_REC_02
 			}
 			elsif (/^$/)
@@ -106,7 +82,7 @@ sub read {
 			}
 			else
 			{
-				die "syntax error 1 at $lineno\n";
+				die "avg_diary::file error: syntax error 1 at $lineno\n";
 			}
 		}
 		elsif ($state == STATE_DATE)
@@ -130,6 +106,8 @@ sub read {
 			$cur_time,
 			$cur_record,
 			$tags,
+			$rec_line,
+			$lineno,
 			$args,
 		);
 	}
