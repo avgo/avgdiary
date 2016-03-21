@@ -13,7 +13,6 @@ BEGIN {
 use strict;
 
 use Cwd qw(abs_path);
-use Time::Local;
 
 use avg_diary::add;
 use avg_diary::file;
@@ -44,7 +43,9 @@ sub action_add {
 	my $param_hh;
 	my $param_min;
 
-	my %cnf;
+	my %cnf = (
+		avg_diary_dir => avg_diary_dir_env
+	);
 
 	while ($_ = shift @_)
 	{

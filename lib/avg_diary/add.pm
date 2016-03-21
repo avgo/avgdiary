@@ -1,9 +1,30 @@
 package avg_diary::add;
 
+BEGIN {
+	use Exporter();
+	our (@EXPORT, @EXPORT_OK, @ISA);
+
+	@ISA    = qw(Exporter);
+	@EXPORT = qw(
+		&avg_diary_add
+	);
+};
+
 use strict;
+
+use Time::Local;
 
 sub avg_diary_add {
 	(my %cnf) = @_;
+
+	my $avg_diary_dir = delete $cnf{avg_diary_dir};
+
+	die	"avg_diary_add() error: 'avg_diary_dir' parameter is unset.\n"
+		if not defined $avg_diary_dir;
+
+	die	"avg_diary_add() error: invalid 'avg_diary_dir' parameter.\n" .
+		"'avg_diary_dir' parameter must be a valid directory.\n"
+		if not -d $avg_diary_dir;
 
 	my $uptime = delete $cnf{uptime};
 	my $date   = delete $cnf{date};
@@ -34,8 +55,6 @@ sub avg_diary_add {
 	{
 		die "error: either date or uptime must be defined.\n";
 	}
-
-	my $avg_diary_dir = avg_diary_dir_env;
 
 	my $diary_file = $avg_diary_dir . "/" . sprintf (
 			"day_%04u_%02u_%02u", $year, $mon, $mday);
