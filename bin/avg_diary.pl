@@ -227,6 +227,33 @@ sub avg_diary_dir_env {
 	return abs_path $avg_diary_dir;
 }
 
+sub action_edit {
+	my $avg_diary = avg_diary::avg_diary->new(
+		avg_diary_dir => avg_diary_dir_env
+	);
+
+	(	my $now_sec,  my $now_min,  my $now_hour,
+		my $now_mday, my $now_mon,  my $now_year,
+		my $now_wday, my $now_yday, my $now_isdst) = localtime;
+
+	$now_mon  += 1;
+	$now_year += 1900;
+
+	my $day_filename = $avg_diary->day_filename(
+		$now_year, $now_mon, $now_mday
+	);
+
+	die	"ошибка action_edit(): Дневник на сегодня ещё не создан.\n" .
+		"Дневник на сегодня можно создать следующей командой:\n" .
+		"\n" .
+		"    avg-diary add\n" .
+		"\n"
+
+		if not -f $day_filename;
+
+	system sprintf ("vim -c 'set expandtab' '%s'", $day_filename);
+}
+
 sub print_usage {
 	my $AppName = $0;
 	my $AppNameStr = " " x length $AppName;
@@ -245,7 +272,8 @@ if (scalar @ARGV == 0) {
 my $command = shift @ARGV;
 
 my %actions = (
-	"add" => \&action_add,
+	"add"  => \&action_add,
+	"edit" => \&action_edit,
 );
 
 my $proc = $actions{$command};
