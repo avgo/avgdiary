@@ -17,49 +17,16 @@ use Time::Local;
 sub avg_diary_add {
 	(my %cnf) = @_;
 
-	my $avg_diary_dir = delete $cnf{avg_diary_dir};
+	my $diary_file = delete $cnf{file};
 
-	die	"avg_diary_add() error: 'avg_diary_dir' parameter is unset.\n"
-		if not defined $avg_diary_dir;
+	die	"avg_diary_add() error: 'file' parameter is unset.\n"
+		if not defined $diary_file;
 
-	die	"avg_diary_add() error: invalid 'avg_diary_dir' parameter.\n" .
-		"'avg_diary_dir' parameter must be a valid directory.\n"
-		if not -d $avg_diary_dir;
+	my $date = delete $cnf{date};
 
-	my $uptime = delete $cnf{uptime};
-	my $date   = delete $cnf{date};
+	die "error: date not defined.\n" if not defined $date;
 
-	my $mday; my $mon; my $year;
-	my $hour; my $min;
-
-	if ($uptime == 1)
-	{
-		die "error: uptime and date def.\n"
-				if defined $date;
-
-		my $uptime_data;
-
-		$uptime_data = `uptime -s`;
-		$uptime_data =~ /([0-9]+)-([0-9]+)-([0-9]+) *([0-9]+):([0-9]+):([0-9]+)/;
-
-		($mday, $mon, $year, $hour, $min) = ($3, $2, $1, $4, $5);
-	}
-	elsif (defined $date)
-	{
-		die "error: one of uptime or date must be def.\n"
-				if not defined $date;
-
-		($mday, $mon, $year, $hour, $min) = @{$date};
-	}
-	else
-	{
-		die "error: either date or uptime must be defined.\n";
-	}
-
-	my $diary_file = $avg_diary_dir . "/" . sprintf (
-			"day_%04u_%02u_%02u", $year, $mon, $mday);
-
-	my $diary_file_old = $diary_file . ".old";
+	(my $mday, my $mon, my $year, my $hour, my $min) = @{$date};
 
 	my $lt = timelocal (0, $min, $hour, $mday, $mon - 1, $year);
 
@@ -97,6 +64,8 @@ sub avg_diary_add {
 
 	if ( -f $diary_file )
 	{
+		my $diary_file_old = $diary_file . ".old";
+
 		unlink $diary_file_old;
 		rename $diary_file, $diary_file_old;
 

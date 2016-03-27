@@ -15,6 +15,7 @@ use strict;
 use Cwd qw(abs_path);
 
 use avg_diary::add;
+use avg_diary::avg_diary;
 use avg_diary::file;
 
 
@@ -43,7 +44,7 @@ sub action_add {
 	my $param_hh;
 	my $param_min;
 
-	my %cnf = (
+	my $avg_diary = avg_diary::avg_diary->new(
 		avg_diary_dir => avg_diary_dir_env
 	);
 
@@ -130,7 +131,15 @@ sub action_add {
 
 	if (defined $param_uptime)
 	{
-		$cnf{uptime} = 1;
+		my $uptime_data;
+
+		$uptime_data = `uptime -s`;
+		$uptime_data =~ /([0-9]+)-([0-9]+)-([0-9]+) *([0-9]+):([0-9]+):([0-9]+)/;
+
+		($param_dd, $param_mon, $param_yyyy, $param_hh, $param_min) =
+		(
+			$3, $2, $1, $4, $5
+		);
 	}
 	else
 	{
@@ -178,15 +187,22 @@ sub action_add {
 
 		die "error: wrong minutes.\n"
 			if $param_min < 0 or 59 < $param_min;
+	}
 
-		$cnf{date} = [
+
+	my %cnf =
+	(
+		date => [
 			$param_dd,
 			$param_mon,
 			$param_yyyy,
 			$param_hh,
 			$param_min,
-		];
-	}
+		],
+		file => $avg_diary->day_filename(
+			$param_yyyy, $param_mon, $param_dd
+		),
+	);
 
 	avg_diary_add %cnf;
 }
