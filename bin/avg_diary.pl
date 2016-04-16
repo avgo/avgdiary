@@ -24,6 +24,9 @@ use avg_diary::file;
 sub action_add;
 sub avg_diary_add;
 sub avg_diary_dir_env;
+sub date_check_dmy;
+sub date_check_hm;
+sub date_correction_year;
 sub print_usage;
 
 
@@ -82,34 +85,27 @@ sub action_add {
 		}
 	}
 
-	#
-	# today is 17.03.2016 10:49.
-	#
-	#   avg-diary add --uptime
-	#   avg-diary add 01.02.2011       -- please, specify a datetime.
-	#   avg-diary add 01.02.2011 10:00 -- ok.
-	#
-	# alternative:
-	#
-	#   avg-diary add 01.02.2011       -- empty record?
-	#
-
 	if (defined $param_dd)
 	{
+		#   avg-diary add 01.02.2011       -- error! Maybe add an empty record?
+
 		die "error: empty times is not supported.\n"
 				if not defined $param_hh;
 
-		if (0 <= $param_yyyy && $param_yyyy <= 50)
-		{
-			$param_yyyy += 2000;
-		}
-		elsif (51 <= $param_yyyy && $param_yyyy <= 99)
-		{
-			$param_yyyy += 1900;
-		}
+		#   avg-diary add 01.02.2011 11:01
+
+		date_correction_year \$param_yyyy;
+		date_check_dmy $param_yyyy, $param_mon, $param_dd;
+		date_check_hm $param_hh, $param_min;
 	}
 	elsif (not defined $param_uptime)
 	{
+		#   avg-diary add
+
+		#   or
+
+		#   avg-diary add 10:00
+
 		(	my $now_sec,  my $now_min,  my $now_hour,
 			my $now_mday, my $now_mon,  my $now_year,
 			my $now_wday, my $now_yday, my $now_isdst) = localtime;
@@ -121,12 +117,19 @@ sub action_add {
 		$param_mon  = $now_mon;
 		$param_yyyy = $now_year;
 
-		if (not defined $param_hh)
+		if (defined $param_hh)
 		{
-			$param_hh    = $now_hour;
-			$param_min   = $now_min;
-		}
+			#   avg-diary add 10:00
 
+			date_check_hm $param_hh, $param_min;
+		}
+		else
+		{
+			#   avg-diary add
+
+			$param_hh  = $now_hour;
+			$param_min = $now_min;
+		}
 	}
 
 	if (defined $param_uptime)
@@ -141,54 +144,6 @@ sub action_add {
 			$3, $2, $1, $4, $5
 		);
 	}
-	else
-	{
-		my $leap_y;
-		my $at_ly;
-
-		my $day_min = 1;
-		my $day_max;
-
-		$leap_y = ($param_yyyy % 4 == 0) ? 1 : 0;
-
-		if ($param_mon < 1 or 12 < $param_mon)
-		{
-			die "error: incorrect value of month!\n";
-		}
-
-		if (	($param_mon == 4) or ($param_mon == 6) or ($param_mon == 9) or
-			($param_mon == 11) )
-		{
-			$day_max = 30;
-		}
-		elsif ($param_mon == 2)
-		{
-			if ($leap_y)
-			{
-				$at_ly   = " at leap year";
-				$day_max = 29;
-			}
-			else
-			{
-				$at_ly   = " at not leap year";
-				$day_max = 28;
-			}
-		}
-		else
-		{
-			$day_max = 31;
-		}
-
-		die "error: month $param_mon$at_ly must have a day between $day_min and $day_max.\n"
-			if $param_dd < $day_min or $day_max < $param_dd;
-
-		die "error: wrong hours.\n"
-			if $param_hh < 0 or 23 < $param_hh;
-
-		die "error: wrong minutes.\n"
-			if $param_min < 0 or 59 < $param_min;
-	}
-
 
 	my %cnf =
 	(
@@ -252,6 +207,73 @@ sub action_edit {
 		if not -f $day_filename;
 
 	system sprintf ("vim -c 'set expandtab' '%s'", $day_filename);
+}
+
+sub date_check_dmy {
+	(my $param_yyyy, my $param_mon, my $param_dd) = @_;
+
+	my $leap_y;
+	my $at_ly;
+
+	my $day_min = 1;
+	my $day_max;
+
+	$leap_y = ($param_yyyy % 4 == 0) ? 1 : 0;
+
+	if (	($param_mon == 4) or ($param_mon == 6) or ($param_mon == 9) or
+		($param_mon == 11) )
+	{
+		$day_max = 30;
+	}
+	elsif ($param_mon == 2)
+	{
+		if ($leap_y)
+		{
+			$at_ly   = " at leap year";
+			$day_max = 29;
+		}
+		else
+		{
+			$at_ly   = " at not leap year";
+			$day_max = 28;
+		}
+	}
+	elsif ($param_mon < 1 or 12 < $param_mon)
+	{
+		die "error: incorrect value of month!\n";
+	}
+	else
+	{
+		$day_max = 31;
+	}
+
+	die "error: month $param_mon$at_ly must have a day between $day_min and $day_max.\n"
+		if $param_dd < $day_min or $day_max < $param_dd;
+}
+
+sub date_check_hm {
+	(my $param_hh, my $param_min) = @_;
+
+	die "error: wrong hours.\n"
+		if $param_hh < 0 or 23 < $param_hh;
+
+	die "error: wrong minutes.\n"
+		if $param_min < 0 or 59 < $param_min;
+}
+
+sub date_correction_year {
+	(my $year_ref) = @_;
+
+	my $year = ${$year_ref};
+
+	if (0 <= $year && $year <= 50)
+	{
+		${$year_ref} = 2000 + $year;
+	}
+	elsif (51 <= $year && $year <= 99)
+	{
+		${$year_ref} = 1900 + $year;
+	}
 }
 
 sub print_usage {
