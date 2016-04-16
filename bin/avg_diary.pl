@@ -40,16 +40,14 @@ my $mark_e = "\033[0m";
 
 
 sub action_add {
-	my $param_uptime;
 	my $param_dd;
 	my $param_mon;
 	my $param_yyyy;
+
 	my $param_hh;
 	my $param_min;
 
-	my $avg_diary = avg_diary::avg_diary->new(
-		avg_diary_dir => avg_diary_dir_env
-	);
+	my $param_uptime;
 
 	while ($_ = shift @_)
 	{
@@ -98,7 +96,21 @@ sub action_add {
 		date_check_dmy $param_yyyy, $param_mon, $param_dd;
 		date_check_hm $param_hh, $param_min;
 	}
-	elsif (not defined $param_uptime)
+	elsif (defined $param_uptime)
+	{
+		#   avg-diary add --uptime
+
+		my $uptime_data;
+
+		$uptime_data = `uptime -s`;
+		$uptime_data =~ /([0-9]+)-([0-9]+)-([0-9]+) *([0-9]+):([0-9]+):([0-9]+)/;
+
+		($param_dd, $param_mon, $param_yyyy, $param_hh, $param_min) =
+		(
+			$3, $2, $1, $4, $5
+		);
+	}
+	else
 	{
 		#   avg-diary add
 
@@ -132,18 +144,9 @@ sub action_add {
 		}
 	}
 
-	if (defined $param_uptime)
-	{
-		my $uptime_data;
-
-		$uptime_data = `uptime -s`;
-		$uptime_data =~ /([0-9]+)-([0-9]+)-([0-9]+) *([0-9]+):([0-9]+):([0-9]+)/;
-
-		($param_dd, $param_mon, $param_yyyy, $param_hh, $param_min) =
-		(
-			$3, $2, $1, $4, $5
-		);
-	}
+	my $avg_diary = avg_diary::avg_diary->new(
+		avg_diary_dir => avg_diary_dir_env
+	);
 
 	my %cnf =
 	(
