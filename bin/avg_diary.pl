@@ -165,26 +165,6 @@ sub action_add {
 	avg_diary_add %cnf;
 }
 
-sub avg_diary_dir_env {
-	my $avg_diary_dir = $ENV{avg_diary_dir};
-
-	die	"ошибка: не указан путь к дневнику.\n".
-		"Укажите правильный путь к дневнику в вашей оболочке\n".
-		"\n" .
-		"  \$ export avg_diary_dir=<dir>\n" .
-		"\n"
-		if not defined $avg_diary_dir;
-
-	die	"ошибка: '$avg_diary_dir' не является каталогом.\n".
-		"Укажите правильный путь к дневнику в вашей оболочке\n".
-		"\n" .
-		"  \$ export avg_diary_dir=<dir>\n" .
-		"\n"
-		if not -d $avg_diary_dir;
-
-	return abs_path $avg_diary_dir;
-}
-
 sub action_edit {
 	my $avg_diary = avg_diary::avg_diary->new(
 		avg_diary_dir => avg_diary_dir_env
@@ -210,6 +190,26 @@ sub action_edit {
 		if not -f $day_filename;
 
 	system sprintf ("vim -c 'set expandtab' '%s'", $day_filename);
+}
+
+sub avg_diary_dir_env {
+	my $avg_diary_dir = $ENV{avg_diary_dir};
+
+	die	"ошибка: не указан путь к дневнику.\n".
+		"Укажите правильный путь к дневнику в вашей оболочке\n".
+		"\n" .
+		"  \$ export avg_diary_dir=<dir>\n" .
+		"\n"
+		if not defined $avg_diary_dir;
+
+	die	"ошибка: '$avg_diary_dir' не является каталогом.\n".
+		"Укажите правильный путь к дневнику в вашей оболочке\n".
+		"\n" .
+		"  \$ export avg_diary_dir=<dir>\n" .
+		"\n"
+		if not -d $avg_diary_dir;
+
+	return abs_path $avg_diary_dir;
 }
 
 sub date_check_dmy {
