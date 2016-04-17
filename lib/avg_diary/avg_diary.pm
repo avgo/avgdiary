@@ -16,6 +16,7 @@ sub new {
 
 	my $self = bless {
 		avg_diary_dir => $avg_diary_dir,
+		tags_dir      => $avg_diary_dir . "/tags",
 	}, $class;
 
 	return $self;
@@ -28,6 +29,12 @@ sub day_filename {
 			"day_%04u_%02u_%02u", $year, $month, $day);
 
 	return $file;
+}
+
+sub get_tags_dir {
+	(my $self) = @_;
+
+	return $self->{tags_dir};
 }
 
 1;

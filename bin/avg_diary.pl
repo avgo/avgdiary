@@ -17,13 +17,16 @@ use Cwd qw(abs_path);
 use avg_diary::add;
 use avg_diary::avg_diary;
 use avg_diary::file;
+use avg_diary::tags::dirtags;
 
 
 
 
 sub action_add;
+sub action_edit;
 sub avg_diary_add;
 sub avg_diary_dir_env;
+sub avg_diary_file_check_tags;
 sub date_check_dmy;
 sub date_check_hm;
 sub date_correction_year;
@@ -148,6 +151,14 @@ sub action_add {
 		avg_diary_dir => avg_diary_dir_env
 	);
 
+	my $tags = avg_diary::tags::dirtags->new;
+
+	$tags->read_tags_from_dir ( $avg_diary->get_tags_dir );
+
+	my $file = $avg_diary->day_filename(
+		$param_yyyy, $param_mon, $param_dd
+	);
+
 	my %cnf =
 	(
 		date => [
@@ -157,19 +168,15 @@ sub action_add {
 			$param_hh,
 			$param_min,
 		],
-		file => $avg_diary->day_filename(
-			$param_yyyy, $param_mon, $param_dd
-		),
+		file => $file,
 	);
 
 	avg_diary_add %cnf;
+
+	avg_diary_file_check_tags $tags, $file;
 }
 
 sub action_edit {
-	my $avg_diary = avg_diary::avg_diary->new(
-		avg_diary_dir => avg_diary_dir_env
-	);
-
 	(	my $now_sec,  my $now_min,  my $now_hour,
 		my $now_mday, my $now_mon,  my $now_year,
 		my $now_wday, my $now_yday, my $now_isdst) = localtime;
@@ -177,7 +184,15 @@ sub action_edit {
 	$now_mon  += 1;
 	$now_year += 1900;
 
-	my $day_filename = $avg_diary->day_filename(
+	my $avg_diary = avg_diary::avg_diary->new(
+		avg_diary_dir => avg_diary_dir_env
+	);
+
+	my $tags = avg_diary::tags::dirtags->new;
+
+	$tags->read_tags_from_dir ( $avg_diary->get_tags_dir );
+
+	my $file = $avg_diary->day_filename(
 		$now_year, $now_mon, $now_mday
 	);
 
@@ -187,9 +202,11 @@ sub action_edit {
 		"    avg-diary add\n" .
 		"\n"
 
-		if not -f $day_filename;
+		if not -f $file;
 
-	system sprintf ("vim -c 'set expandtab' '%s'", $day_filename);
+	system sprintf ("vim -c 'set expandtab' '%s'", $file);
+
+	avg_diary_file_check_tags $tags, $file;
 }
 
 sub avg_diary_dir_env {
@@ -210,6 +227,24 @@ sub avg_diary_dir_env {
 		if not -d $avg_diary_dir;
 
 	return abs_path $avg_diary_dir;
+}
+
+sub avg_diary_file_check_tags {
+	(my $tags, my $filename) = @_;
+
+	my $file = avg_diary::file->new ( filename => $filename );
+
+	$file->read ( sub
+	{
+		(my $date, my $time, my $rec, my $tags,
+			my $rec_line, my $rec_line_e, my $args) = @_;
+
+		for my $ct (@{$tags})
+		{
+			printf	"warning: tag '%s' is not exists.\n",
+				$ct if not $args->tag_ex ($ct);
+		}
+	}, $tags);
 }
 
 sub date_check_dmy {
