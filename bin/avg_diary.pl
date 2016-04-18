@@ -24,6 +24,7 @@ use avg_diary::tags::dirtags;
 
 sub action_add;
 sub action_edit;
+sub action_view;
 sub avg_diary_add;
 sub avg_diary_dir_env;
 sub avg_diary_file_check_tags;
@@ -285,6 +286,76 @@ sub action_edit {
 	avg_diary_file_check_tags $tags, $file;
 }
 
+sub action_view {
+	if (scalar @_ > 1)
+	{
+		die "view error: \n";
+	}
+
+	(my $tag) = @_;
+
+	my $avg_diary = avg_diary::avg_diary->new(
+		avg_diary_dir => avg_diary_dir_env
+	);
+
+	my $tags = avg_diary::tags::dirtags->new;
+
+	$tags->read_tags_from_dir ( $avg_diary->get_tags_dir );
+
+	die	"error: tag '$tag' not exists.\n"
+		if defined $tag and not $tags->tag_ex ( $tag );
+
+	open my $fd, " | less -i" or die "error: can't open pipe. $!.\n";
+
+	my $args =
+	{
+		fd        => $fd,
+		last_date => undef,
+		tag       => $tag,
+	};
+
+	for my $dayfile ( @{$avg_diary->dayfiles} )
+	{
+		$args->{dayfile}    = $dayfile;
+		$args->{dayfile_rp} = $avg_diary->{avg_diary_dir} . "/" . $dayfile;
+
+		my $file = avg_diary::file->new (
+			filename => $args->{dayfile_rp}
+		);
+
+		$file->read ( sub
+		{
+			(my $date, my $time, my $rec, my $tags,
+				my $rec_line, my $rec_line_e, my $args) = @_;
+
+			my $fd  = $args->{fd};
+			my $tag = $args->{tag};
+
+			return if defined $tag and not grep /^$tag(\/|$)/, @{$tags};
+
+			if ($args->{last_date} ne $date)
+			{
+				$date =~ /^ *([0-9]+)\.([0-9]+)\.([0-9]+)/;
+
+				(my $day, my $mon, my $year) = ($1, $2, $3);
+
+				printf { $fd }
+					"%s" .
+					"\n" .
+					"         avg-diary edit %02u.%02u.%04u\n" .
+					"\n"
+					,
+					$date,
+					$day, $mon, $year;
+
+				$args->{last_date} = $date;
+			}
+
+			print { $fd } $rec;
+		}, $args);
+	}
+}
+
 sub avg_diary_dir_env {
 	my $avg_diary_dir = $ENV{avg_diary_dir};
 
@@ -410,6 +481,7 @@ my $command = shift @ARGV;
 my %actions = (
 	"add"  => \&action_add,
 	"edit" => \&action_edit,
+	"view" => \&action_view,
 );
 
 my $proc = $actions{$command};

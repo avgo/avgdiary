@@ -31,6 +31,30 @@ sub day_filename {
 	return $file;
 }
 
+sub dayfiles {
+	(my $self) = @_;
+
+	opendir my $fd, $self->{avg_diary_dir} or die
+		"error: can't open avgdiary dir '" .
+		$self->{avg_diary_dir} . "'.\n";
+
+	my $dayfiles = [ ];
+
+	while ( my $file = readdir $fd )
+	{
+		my $file_rp = $self->{avg_diary_dir} . "/" . $file;
+
+		next if not -f $file_rp or
+			not $file =~ /^day_[0-9]{4}.[0-9]{2}.[0-9]{2}$/;
+
+		push @{$dayfiles}, $file;
+	}
+
+	@{$dayfiles} = sort @{$dayfiles};
+
+	return $dayfiles;
+}
+
 sub get_tags_dir {
 	(my $self) = @_;
 
