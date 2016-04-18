@@ -177,12 +177,43 @@ sub action_add {
 }
 
 sub action_edit {
-	(	my $now_sec,  my $now_min,  my $now_hour,
-		my $now_mday, my $now_mon,  my $now_year,
-		my $now_wday, my $now_yday, my $now_isdst) = localtime;
+	my $param_day;
+	my $param_mon;
+	my $param_year;
 
-	$now_mon  += 1;
-	$now_year += 1900;
+	while ($_ = shift @_)
+	{
+		if (/^([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{1,4})$/)
+		{
+			die "error: date is already defined!\n"
+					if defined $param_day;
+			($param_day, $param_mon, $param_year) = ($1, $2, $3);
+		}
+		else
+		{
+			die "error: unknown parameter '$_'.\n";
+		}
+	}
+
+	my $is_today;
+
+	if (defined $param_day)
+	{
+		date_correction_year \$param_year;
+		date_check_dmy $param_year, $param_mon, $param_day;
+
+		$is_today = 0;
+	}
+	else
+	{
+		(undef, undef, undef,
+			$param_day, $param_mon, $param_year) = localtime;
+
+		$param_mon  += 1;
+		$param_year += 1900;
+
+		$is_today = 1;
+	}
 
 	my $avg_diary = avg_diary::avg_diary->new(
 		avg_diary_dir => avg_diary_dir_env
@@ -193,16 +224,61 @@ sub action_edit {
 	$tags->read_tags_from_dir ( $avg_diary->get_tags_dir );
 
 	my $file = $avg_diary->day_filename(
-		$now_year, $now_mon, $now_mday
+		$param_year, $param_mon, $param_day
 	);
 
-	die	"ошибка action_edit(): Дневник на сегодня ещё не создан.\n" .
-		"Дневник на сегодня можно создать следующей командой:\n" .
-		"\n" .
-		"    avg-diary add\n" .
-		"\n"
+	if ( not -f $file )
+	{
+		my $message;
+		my $add_param;
 
-		if not -f $file;
+		if ($is_today)
+		{
+			$message = "сегодня";
+			$add_param = "\n";
+		}
+		else
+		{
+			my @months = (
+				"января",  "февраля", "марта",
+				"апреля",  "мая",     "июня",
+				"июля",    "августа", "сентября",
+				"октября", "ноября",  "декабря"
+			);
+
+			$message   = sprintf
+					"%u %s %u года"
+					,
+					$param_day, $months[$param_mon-1], $param_year
+			;
+
+			$add_param = sprintf
+					" %02u.%02u.%04u hh:mm\n" .
+					"\n" .
+					"ПАРАМЕТРЫ:\n" .
+					"\n" .
+					"    add           Действие для добавления записей в новый или\n" .
+					"                  уже существующий дневник.\n" .
+					"\n" .
+					"    %02u.%02u.%04u    Дата добавляемой записи.\n" .
+					"\n" .
+					"    hh:mm         Часы и минуты добавляемой записи (запись будет\n" .
+					"                  датирована именно этим временем).\n"
+					,
+					$param_day, $param_mon, $param_year,
+					$param_day, $param_mon, $param_year
+			;
+		}
+
+		die	"\n" .
+			"ОШИБКА!  action_edit(): Дневник на $message ещё не создан.\n" .
+			"\n" .
+			"Дневник на $message можно создать следующей командой:\n" .
+			"\n" .
+			"    \$ avg-diary add$add_param" .
+			"\n"
+		;
+	}
 
 	system sprintf ("vim -c 'set expandtab' '%s'", $file);
 
