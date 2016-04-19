@@ -63,7 +63,8 @@ sub read {
 			}
 			else
 			{
-				die "avg_diary::file error: syntax error 2 at $lineno\n" .
+				die	"avg_diary::file error: syntax error 2 at " .
+					$self->{filename} . ":$lineno\n" .
 					$_ . "\n";
 			}
 		}
@@ -82,7 +83,9 @@ sub read {
 			}
 			else
 			{
-				die "avg_diary::file error: syntax error 1 at $lineno\n";
+				die	"avg_diary::file error: syntax error 1 at " .
+					$self->{filename} . ":$lineno\n" .
+					$_ . "\n";
 			}
 		}
 		elsif ($state == STATE_DATE)
