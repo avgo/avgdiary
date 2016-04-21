@@ -22,6 +22,15 @@ use avg_diary::tags::dirtags;
 
 
 
+use constant {
+	PARSE_OPT_OPTREQ => 1,
+	PARSE_OPT_REQ    => 2,
+	PARSE_OPT_SET    => 4,
+};
+
+
+
+
 sub action_add;
 sub action_edit;
 sub action_view;
@@ -31,6 +40,7 @@ sub avg_diary_file_check_tags;
 sub date_check_dmy;
 sub date_check_hm;
 sub date_correction_year;
+sub parse_options;
 sub print_usage;
 
 
@@ -287,12 +297,14 @@ sub action_edit {
 }
 
 sub action_view {
-	if (scalar @_ > 1)
-	{
-		die "view error: \n";
-	}
+	my $tag;
 
-	(my $tag) = @_;
+	parse_options {
+		"-t" => [ PARSE_OPT_OPTREQ, \$tag ],
+	}, \@_;
+
+	die	"error: unknown parameter '" . $_[0] . "'.\n"
+		if $#_ >= 0;
 
 	my $avg_diary = avg_diary::avg_diary->new(
 		avg_diary_dir => avg_diary_dir_env
@@ -461,6 +473,56 @@ sub date_correction_year {
 	}
 }
 
+sub parse_options {
+	my $opts_hash = shift;
+	my $opts_arr = shift;
+	
+	while ($#{$opts_arr} >= 0)
+	{
+		my $cur_opt = ${$opts_arr}[0];
+
+		last if not ($cur_opt =~ /^-/);
+
+		shift @{$opts_arr};
+
+		my $arr1 = ${$opts_hash}{$cur_opt};
+
+		die "error: unknown option '$cur_opt'.\n"
+			if not defined $arr1;
+
+		my $flags = \${$arr1}[0];
+
+		die "error: option '$cur_opt' already set.\n"
+			if ${$flags} & PARSE_OPT_SET;
+
+		my $ref1 = ${$arr1}[1];
+
+		if ( ${$flags} & PARSE_OPT_OPTREQ )
+		{
+			die "error: '$cur_opt' require option value.\n"
+				if $#{$opts_arr} < 0;
+
+			${$ref1} = shift @{$opts_arr};
+		}
+		else
+		{
+			${$ref1} = 1;
+		}
+
+		${$flags} |= PARSE_OPT_SET;
+	}
+
+	for my $key (keys %{$opts_hash})
+	{
+		my $arr1 = ${$opts_hash}{$key};
+		my $flags = ${$arr1}[0];
+
+		die 	"error: option $key required.\n"
+			if not ( $flags & PARSE_OPT_SET )
+			and ( $flags & PARSE_OPT_REQ );
+	}
+}
+
 sub print_usage {
 	my $AppName = $0;
 	my $AppNameStr = " " x length $AppName;
@@ -471,7 +533,8 @@ sub print_usage {
 
 
 
-if (scalar @ARGV == 0) {
+if (scalar @ARGV == 0)
+{
 	print_usage;
 	exit 1;
 }
@@ -486,7 +549,8 @@ my %actions = (
 
 my $proc = $actions{$command};
 
-if (not defined $proc) {
+if (not defined $proc)
+{
 	printf	"ошибка: нет такой команды '%s'.\n".
 		"можете запустить программу с любой из этих опций:\n",
 		$command;
