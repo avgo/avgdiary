@@ -97,6 +97,13 @@ sub action_add {
 		}
 	}
 
+	(	my $now_sec,  my $now_min,  my $now_hour,
+		my $now_mday, my $now_mon,  my $now_year,
+		my $now_wday, my $now_yday, my $now_isdst) = localtime;
+
+	$now_mon  += 1;
+	$now_year += 1900;
+
 	if (defined $param_dd)
 	{
 		#   avg-diary add 01.02.2011       -- error! Maybe add an empty record?
@@ -106,7 +113,15 @@ sub action_add {
 
 		#   avg-diary add 01.02.2011 11:01
 
-		date_correction_year \$param_yyyy;
+		if ( defined $param_yyyy )
+		{
+			date_correction_year \$param_yyyy;
+		}
+		else
+		{
+			$param_yyyy = $now_year;
+		}
+
 		date_check_dmy $param_yyyy, $param_mon, $param_dd;
 		date_check_hm $param_hh, $param_min;
 	}
@@ -131,13 +146,6 @@ sub action_add {
 		#   or
 
 		#   avg-diary add 10:00
-
-		(	my $now_sec,  my $now_min,  my $now_hour,
-			my $now_mday, my $now_mon,  my $now_year,
-			my $now_wday, my $now_yday, my $now_isdst) = localtime;
-
-		$now_mon  += 1;
-		$now_year += 1900;
 
 		$param_dd   = $now_mday;
 		$param_mon  = $now_mon;
@@ -194,11 +202,11 @@ sub action_edit {
 
 	while ($_ = shift @_)
 	{
-		if (/^([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{1,4})$/)
+		if (/^([0-9]{1,2})\.([0-9]{1,2})(\.([0-9]{1,4}))?$/)
 		{
 			die "error: date is already defined!\n"
 					if defined $param_day;
-			($param_day, $param_mon, $param_year) = ($1, $2, $3);
+			($param_day, $param_mon, $param_year) = ($1, $2, $4);
 		}
 		else
 		{
@@ -206,22 +214,34 @@ sub action_edit {
 		}
 	}
 
+	(	undef, undef, undef,
+		my $now_mday, my $now_mon, my $now_year) = localtime;
+
+	$now_mon  += 1;
+	$now_year += 1900;
+
 	my $is_today;
 
 	if (defined $param_day)
 	{
-		date_correction_year \$param_year;
+		if ( defined $param_year )
+		{
+			date_correction_year \$param_year;
+		}
+		else
+		{
+			$param_year = $now_year;
+		}
+
 		date_check_dmy $param_year, $param_mon, $param_day;
 
 		$is_today = 0;
 	}
 	else
 	{
-		(undef, undef, undef,
-			$param_day, $param_mon, $param_year) = localtime;
-
-		$param_mon  += 1;
-		$param_year += 1900;
+		($param_day, $param_mon, $param_year) = (
+			$now_mday, $now_mon, $now_year
+		);
 
 		$is_today = 1;
 	}
