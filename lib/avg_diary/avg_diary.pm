@@ -2,6 +2,24 @@ package avg_diary::avg_diary;
 
 use strict;
 
+use avg_diary::file;
+
+
+
+
+BEGIN {
+	use Exporter();
+	our (@EXPORT, @EXPORT_OK, @ISA);
+
+	@ISA    = qw(Exporter);
+	@EXPORT = qw(
+		dayfile_name_to_date
+	);
+};
+
+
+
+
 sub new {
 	(my $class, my %cnf) = @_;
 
@@ -31,6 +49,15 @@ sub day_filename {
 	return $file;
 }
 
+sub dayfile_name_to_date {
+	my $dayfile_name = shift ;
+
+	$dayfile_name =~ /day_([0-9]+)_([0-9]+)_([0-9]+)$/
+		or return ;
+
+	return ( $1, $2, $3 ) ;
+}
+
 sub dayfiles {
 	(my $self) = @_;
 
@@ -53,6 +80,47 @@ sub dayfiles {
 	@{$dayfiles} = sort @{$dayfiles};
 
 	return $dayfiles;
+}
+
+sub dayfiles_tagged {
+	(my $self, my $tag) = @_;
+
+	my $dayfiles = $self->dayfiles ;
+
+	return $dayfiles if not defined $tag ;
+
+	my $dayfiles_tagged = [ ];
+
+	my $args = {
+		dayfiles_tagged => $dayfiles_tagged,
+		tag             => $tag,
+	};
+
+	for my $dayfile ( @{$dayfiles} )
+	{
+		my $file = avg_diary::file->new (
+			filename => $self->{avg_diary_dir} . "/" . $dayfile
+		);
+
+		$args->{dayfile} = $dayfile ;
+
+		$file->read ( sub
+		{
+			(my $date, my $time, my $rec, my $tags,
+				my $rec_line, my $rec_line_e, my $args) = @_;
+
+			my $tag = $args->{tag};
+
+			return AVG_DIARY_FILE_READ
+				if not grep /^$tag(\/|$)/, @{$tags};
+
+			push @{$args->{dayfiles_tagged}}, $args->{dayfile};
+
+			return AVG_DIARY_FILE_READ_BREAK;
+		}, $args );
+	}
+
+	return $dayfiles_tagged ;
 }
 
 sub get_tags_dir {

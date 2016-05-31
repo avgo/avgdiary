@@ -2,6 +2,24 @@ package avg_diary::file;
 
 use strict;
 
+
+
+
+BEGIN {
+	use Exporter();
+	our (@EXPORT, @EXPORT_OK, @ISA);
+
+	@ISA    = qw(Exporter);
+	@EXPORT = qw(
+		AVG_DIARY_FILE_READ
+		AVG_DIARY_FILE_READ_BREAK
+		AVG_DIARY_FILE_READ_STOP
+	);
+};
+
+
+
+
 sub new {
 	(my $class, my %cnf) = @_;
 
@@ -18,6 +36,10 @@ sub new {
 }
 
 use constant {
+	AVG_DIARY_FILE_READ_BREAK => 0,
+	AVG_DIARY_FILE_READ_STOP  => 0,
+	AVG_DIARY_FILE_READ       => 1,
+
 	STATE_DATE    => 1,
 	STATE_REC_01  => 2,
 	STATE_REC_02  => 3,
@@ -41,7 +63,7 @@ sub read {
 		{
 			if (/^([0-9]{2}:[0-9]{2}) /)
 			{
-				&{$proc} (
+				my $result = &{$proc} (
 					$cur_date,
 					$cur_time,
 					$cur_record,
@@ -50,6 +72,8 @@ sub read {
 					$lineno,
 					$args,
 				);
+
+				return if $result == AVG_DIARY_FILE_READ_BREAK ;
 
 				$cur_time = $1;
 				$cur_record = $_;
@@ -104,7 +128,7 @@ sub read {
 
 	if ($state == STATE_REC_02)
 	{
-		&{$proc} (
+		my $result = &{$proc} (
 			$cur_date,
 			$cur_time,
 			$cur_record,

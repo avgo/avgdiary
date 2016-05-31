@@ -14,6 +14,8 @@ use strict;
 
 use Time::Local;
 
+use avg_diary::file;
+
 sub avg_diary_add {
 	(my %cnf) = @_;
 
@@ -91,6 +93,8 @@ sub avg_diary_add {
 
 			$args->{data_new} .= $rec;
 			$args->{last_line} = $rec_line_e;
+
+			return AVG_DIARY_FILE_READ ;
 		}, $args);
 	}
 	else

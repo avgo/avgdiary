@@ -6,16 +6,18 @@
 #
 
 BEGIN {
-	my $debug = 0;
+	my $debug = 1;
 	@INC = ("./lib", @INC) if $debug == 1;
 }
 
 use strict;
 
 use Cwd qw(abs_path);
+use Data::Dumper;
 
 use avg_diary::add;
 use avg_diary::avg_diary;
+use avg_diary::calendar;
 use avg_diary::file;
 use avg_diary::tags::dirtags;
 
@@ -318,9 +320,11 @@ sub action_edit {
 
 sub action_view {
 	my $tag;
+	my $calendar_enabled;
 
 	parse_options {
-		"-t" => [ PARSE_OPT_OPTREQ, \$tag ],
+		"-c" => [                0, \$calendar_enabled ],
+		"-t" => [ PARSE_OPT_OPTREQ, \$tag              ],
 	}, \@_;
 
 	die	"error: unknown parameter '" . $_[0] . "'.\n"
@@ -337,16 +341,25 @@ sub action_view {
 	die	"error: tag '$tag' not exists.\n"
 		if defined $tag and not $tags->tag_ex ( $tag );
 
+	my $dayfiles = $avg_diary->dayfiles_tagged ( $tag );
+
+	my $calendar;
+
+	$calendar = avg_diary::calendar->new ( dayfiles => $dayfiles )
+		if $calendar_enabled ;
+
 	open my $fd, " | less -i" or die "error: can't open pipe. $!.\n";
 
 	my $args =
 	{
+		calendar  => $calendar,
+		dayfiles  => $dayfiles,
 		fd        => $fd,
 		last_date => undef,
 		tag       => $tag,
 	};
 
-	for my $dayfile ( @{$avg_diary->dayfiles} )
+	for my $dayfile ( @{$dayfiles} )
 	{
 		$args->{dayfile}    = $dayfile;
 		$args->{dayfile_rp} = $avg_diary->{avg_diary_dir} . "/" . $dayfile;
@@ -360,10 +373,12 @@ sub action_view {
 			(my $date, my $time, my $rec, my $tags,
 				my $rec_line, my $rec_line_e, my $args) = @_;
 
-			my $fd  = $args->{fd};
-			my $tag = $args->{tag};
+			my $calendar = $args->{calendar};
+			my $fd       = $args->{fd};
+			my $tag      = $args->{tag};
 
-			return if defined $tag and not grep /^$tag(\/|$)/, @{$tags};
+			return AVG_DIARY_FILE_READ
+				if defined $tag and not grep /^$tag(\/|$)/, @{$tags};
 
 			if ($args->{last_date} ne $date)
 			{
@@ -375,15 +390,22 @@ sub action_view {
 					"%s" .
 					"\n" .
 					"         avg-diary edit %02u.%02u.%04u\n" .
-					"\n"
+					"\n" .
+					"%s"
 					,
 					$date,
-					$day, $mon, $year;
+					$day, $mon, $year,
+					defined $calendar ? $calendar->print_cal (
+						dayfile_name_to_date $args->{dayfile},
+					) : ""
+				;
 
 				$args->{last_date} = $date;
 			}
 
 			print { $fd } $rec;
+
+			return AVG_DIARY_FILE_READ ;
 		}, $args);
 	}
 }
