@@ -6,7 +6,7 @@
 #
 
 BEGIN {
-	my $debug = 1;
+	my $debug = 0;
 	@INC = ("./lib", @INC) if $debug == 1;
 }
 
