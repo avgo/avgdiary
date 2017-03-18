@@ -1,6 +1,7 @@
 package avg_diary::avg_diary;
 
 use strict;
+use utf8;
 
 use avg_diary::file;
 

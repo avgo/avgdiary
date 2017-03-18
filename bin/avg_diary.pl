@@ -11,6 +11,7 @@ BEGIN {
 }
 
 use strict;
+use utf8;
 
 use Cwd qw(abs_path);
 use Data::Dumper;
@@ -445,6 +446,8 @@ sub avg_diary_file_check_tags {
 			printf	"warning: tag '%s' is not exists.\n",
 				$ct if not $args->tag_ex ($ct);
 		}
+
+		return AVG_DIARY_FILE_READ;
 	}, $tags);
 }
 
@@ -574,6 +577,8 @@ sub print_usage {
 
 
 
+
+binmode STDOUT, ':utf8';
 
 if (scalar @ARGV == 0)
 {

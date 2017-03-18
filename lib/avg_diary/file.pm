@@ -1,6 +1,7 @@
 package avg_diary::file;
 
 use strict;
+use utf8;
 
 
 
@@ -54,7 +55,7 @@ sub read {
 	my $lineno = 1; my $rec_line;
 	my $tags = [ ];
 
-	open my $fd, "<", $self->{filename} or die
+	open my $fd, "<:encoding(UTF-8)", $self->{filename} or die
 			"avg_diary::file error: can't open file '$self->{filename}'. $!.\n";
 
 	while (<$fd>)

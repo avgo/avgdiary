@@ -11,6 +11,7 @@ BEGIN {
 };
 
 use strict;
+use utf8;
 
 use Time::Local;
 
@@ -110,7 +111,7 @@ sub avg_diary_add {
 		$args->{rec_line_e} =  $args->{rec_line} + 2;
 	}
 
-	open my $fd, ">", $diary_file or die "error: \n";
+	open my $fd, ">:encoding(UTF-8)", $diary_file or die "error: \n";
 
 	print $fd $args->{data_new};
 

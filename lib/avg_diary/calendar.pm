@@ -1,6 +1,7 @@
 package avg_diary::calendar;
 
 use strict;
+use utf8;
 
 use Date::Calc qw(
 	Add_Delta_Days
