@@ -351,6 +351,8 @@ sub action_view {
 
 	open my $fd, " | less -i" or die "error: can't open pipe. $!.\n";
 
+	binmode $fd, q{:utf8};
+
 	my $args =
 	{
 		calendar  => $calendar,
